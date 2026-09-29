@@ -59,29 +59,33 @@
     margin: 0;
   }
 
-  .lang-picker {
+  .lang-selector {
     display: flex;
-    background: var(--input-bg);
-    border: 1px solid var(--border);
+    gap: 6px;
+    background-color: var(--card-bg);
+    padding: 4px;
     border-radius: var(--radius-sm);
-    padding: 2px;
-    gap: 2px;
+    border: 1px solid var(--border);
   }
 
   .lang-btn {
-    background: transparent;
+    background: none;
     border: none;
     color: var(--text-secondary);
     font-size: 0.75rem;
     font-weight: 600;
     padding: 6px 10px;
-    border-radius: 6px;
+    border-radius: 4px;
     cursor: pointer;
     transition: all 0.15s ease;
   }
 
   .lang-btn.active {
-    background: var(--btn-secondary-hover);
+    background-color: var(--btn-secondary);
+    color: var(--text-primary);
+  }
+
+  .lang-btn:hover:not(.active) {
     color: var(--text-primary);
   }
 
@@ -211,10 +215,10 @@
       <h1 id="ui_title">Generador de Stakeholders</h1>
       <p class="subtitle" id="ui_subtitle">Parametrització i descàrrega de perfils per a LAMB</p>
     </div>
-    <div class="lang-picker">
-      <button class="lang-btn active" id="btn_cat" onclick="setUILang('cat')">CAT</button>
-      <button class="lang-btn" id="btn_es" onclick="setUILang('es')">ES</button>
-      <button class="lang-btn" id="btn_en" onclick="setUILang('en')">EN</button>
+    <div class="lang-selector">
+      <button class="lang-btn active" onclick="canviarIdiomaUI('cat')" id="btn_lang_cat">CAT</button>
+      <button class="lang-btn" onclick="canviarIdiomaUI('es')" id="btn_lang_es">ES</button>
+      <button class="lang-btn" onclick="canviarIdiomaUI('en')" id="btn_lang_en">EN</button>
     </div>
   </header>
 
@@ -273,9 +277,9 @@
 
 <script>
 /* ==========================================================================
-   CONFIGURACIÓ MULTI-IDIOMA I TEXTOS (EDITA AQUÍ)
+   1. DICCIONARI D'INTERFÍCIE VISUAL (Només canvia etiquetes i botons)
    ========================================================================== */
-const I18N = {
+const UI_LANGS = {
   cat: {
     title: "Generador de Stakeholders",
     subtitle: "Parametrització i descàrrega de perfils per a LAMB",
@@ -296,69 +300,13 @@ const I18N = {
     btnDownload: "Descarregar arxiu .json",
     btnImport: "Importar arxiu .json",
     btnCopy: "Copiar Prompt",
-    btnPreview: "Previsualitzar estructura JSON",
-    agentLanguages: [
-      { id: "cat", label: "Català", instruction: "IDIOMA DE COMUNICACIÓ: Inicia la conversa en CATALÀ. Si l'estudiant et parla en un altre idioma, adapta't a la seva llengua per facilitar la comunicació." },
-      { id: "es", label: "Castellano", instruction: "IDIOMA DE COMUNICACIÓN: Inicia la conversación en CASTELLANO. Si el estudiante te habla en otro idioma, adáptate a su lengua para facilitar la comunicación." },
-      { id: "en", label: "English", instruction: "COMMUNICATION LANGUAGE: Initiate the conversation in ENGLISH. If the student speaks to you in another language, adapt to their language to facilitate communication." }
-    ],
-    noms: {
-      prenoms: ["Laia", "Martí", "Clara", "Oriol", "Núria", "Pau", "Júlia", "Marc", "Mireia", "Pol", "Elena", "Ignasi", "Aina", "Arnau", "Sílvia", "Guillem", "Berta", "Roger", "Marina", "Aleix"],
-      cognoms: ["Bosch", "Soler", "Rovira", "Valls", "Casanova", "Serra", "Font", "Vidal", "Puig", "Altimira", "Domènech", "Grau", "Ferrer", "Prat", "Castelló", "Miralles", "Roca", "Pascual"]
-    },
-    demografics: [
-      { 
-        label: "Directiu sènior, estil formal i concís", 
-        prompt: "Ets un directiu veterà amb dècades d'experiència al sector. El teu to és solemne, formal, distant i estrictament corporatiu (tracta de vostè si cal). Tens una paciència limitada per a discursos llargs i 'modernitats buides'. No t'impressionen els tecnicismes d'última moda: valores la precisió numèrica, les dades contrastades i l'experiència consolidada." 
-      },
-      { 
-        label: "Perfil jove, estil informal i proper", 
-        prompt: "Ets un perfil jove, dinàmic i informal que parla de tu a tu sense crosses corporatives. Fes servir expressions directes, fresques i col·loquials d'un entorn de treball modern. T'entusiasma la tecnologia punta, la digitalització i les solucions intel·ligents. Mostres molta curiositat, ets ràpid responent i et connectes fàcilment amb idees innovadores." 
-      },
-      { 
-        label: "Tècnic intermedi, escèptic i metòdic", 
-        prompt: "Ets un enginyer o cap tècnic veterà de camp, extremadament escèptic, metòdic i meticulós. Has vist fracassar molts projectes teòrics sobre el terreny. Dubtes per defecte de qualsevol promesa que sembli massa optimista. Exigeixes detalls sobre manteniment, fallades típiques, robustesa física i 'com funcionarà això quan es trenqui o no hi hagi cobertura'." 
-      }
-    ],
-    ideologics: [
-      { 
-        label: "Focalitzat estrictament en cost i ROI", 
-        prompt: "Prioritzes obsessivament l'austeritat financera i el retorn ràpid de la inversió (ROI). Per a tu qualsevol funcionalitat addicional que no estalviï costos directes o hores de mà d'obra és una despesa inútil. Qüestiones sistemàticament el preu de cada component i demanes descomptes o alternatives barates." 
-      },
-      { 
-        label: "Apostat per la innovació i escalabilitat", 
-        prompt: "Prioritzes la modernització radical, l'escalabilitat i la innovació tecnològica. No vols 'pegats' analògics ni solucions conservadores del passat. Estàs disposat a assumir certs riscos si la proposta inclou arquitectures modernes (IoT, núvol, telemetria avançada, integració de dades) i deixa la infraestructura preparada per al futur." 
-      },
-      { 
-        label: "Prioritat en sostenibilitat i seguretat laboral", 
-        prompt: "Prioritzes per sobre de tot l'impacte ambiental, la petjada ecològica i el benestar dels treballadors. No t'importa tant si una eina costa una mica més si redueix el consum d'aigua/energia i evita riscos físics o sobrecàrrega als operaris. Qualsevol proposta ha de respectar la normativa mediambiental i la sostenibilitat a llarg termini." 
-      }
-    ],
-    poder: [
-      { 
-        label: "Capacitat total de decisió i veto", 
-        prompt: "Tens l'autoritat màxima executiva del projecte. Parles amb la seguretat de qui pren la decisió final: 'Això ho aprovo jo' o 'Si no em convenç a mi, el projecte no es fa'. No has de demanar permís a ningú més." 
-      },
-      { 
-        label: "Rol assessor (sense vot executiu)", 
-        prompt: "Ets únicament un assessor o analista tècnic intern: NO tens poder per aprovar res ni per signar pressupostos. Tot ho has de portar al comitè o a la Direcció General. Ho recalques sovint: 'A mi em pot agradar molt, però com no li portem números clars al Director General, ens tancaran la porta a la cara'." 
-      },
-      { 
-        label: "Poder d'influència tècnica parcial", 
-        prompt: "Ets el filtre tècnic imprescindible de l'empresa. Si la solució no et convenç a nivell d'enginyeria i viabilitat real, emetràs un informe desfavorable que bloquejarà la compra per part d'administració, encara que la decisió econòmica final vingui de Direcció." 
-      }
-    ],
-    casPerDefecte: {
-      infoOberta: "Necessitem automatitzar el trasllat intern de components pesats entre les línies d'acoblament i l'àrea d'embalatge per reduir colls d'ampolla.",
-      infoOculta: "Pressupost de contingència retingut: 35.000€. L'espai físic de pas té un estrenyiment crític d'1.80m que cap carretó convencional actual pot creuar."
-    }
+    btnPreview: "Previsualitzar estructura JSON"
   },
-
   es: {
     title: "Generador de Stakeholders",
     subtitle: "Parametrización y descarga de perfiles para LAMB",
     secId: "Identificación",
-    lblAssistant: "Nombre interno del asistente (archivo / identificador LAMB)",
+    lblAssistant: "Nombre interno del asistente (archivo / ID LAMB)",
     lblCharName: "Nombre del personaje visible",
     btnRandomName: "🎲 Aleatorio",
     lblCharRole: "Cargo o rol en la empresa",
@@ -366,156 +314,106 @@ const I18N = {
     secTraits: "Rasgos de Personalidad",
     btnRandomTraits: "🎲 Aleatorizar rasgos",
     lblDemo: "Estilo comunicativo (demográfico)",
-    lblIdeo: "Postura ante decisiones (ideológico)",
-    lblPower: "Poder de decisión y veto",
+    lblIdeo: "Postura ante las decisiones (ideológico)",
+    lblPower: "Poder de aprobación y veto",
     secCase: "Información del Caso",
     lblOpen: "Información abierta (disponible de inicio)",
     lblHidden: "Información oculta y custodiada (solo si preguntan correctamente)",
     btnDownload: "Descargar archivo .json",
     btnImport: "Importar archivo .json",
     btnCopy: "Copiar Prompt",
-    btnPreview: "Previsualizar estructura JSON",
-    agentLanguages: [
-      { id: "cat", label: "Català", instruction: "IDIOMA DE COMUNICACIÓ: Inicia la conversa en CATALÀ. Si l'estudiant et parla en un altre idioma, adapta't a la seva llengua per facilitar la comunicació." },
-      { id: "es", label: "Castellano", instruction: "IDIOMA DE COMUNICACIÓN: Inicia la conversación en CASTELLANO. Si el estudiante te habla en otro idioma, adáptate a su lengua para facilitar la comunicación." },
-      { id: "en", label: "English", instruction: "COMMUNICATION LANGUAGE: Initiate the conversation in ENGLISH. If the student speaks to you in another language, adapt to their language to facilitate communication." }
-    ],
-    noms: {
-      prenoms: ["Carlos", "Lucía", "Javier", "Marta", "Alejandro", "Sofia", "David", "Elena", "Pablo", "Laura", "Daniel", "Carmen", "Manuel", "Ana", "Hugo", "Paula"],
-      cognoms: ["Navarro", "García", "Rodríguez", "López", "Sánchez", "Pérez", "Gómez", "Martín", "Ruiz", "Hernández", "Díaz", "Moreno", "Álvarez", "Romero", "Alonso"]
-    },
-    demografics: [
-      { 
-        label: "Directivo sénior, estilo formal y conciso", 
-        prompt: "Eres un directivo veterano con décadas de experiencia en el sector. Tu tono es solemne, formal, distante y estrictamente corporativo (trata de usted si es necesario). Tienes paciencia limitada para rodeos y 'modernidades vacías'. No te impresionan los tecnicismos de moda: valoras la precisión numérica, los datos contrastados y la experiencia consolidada." 
-      },
-      { 
-        label: "Perfil joven, estilo informal y cercano", 
-        prompt: "Eres un perfil joven, dinámico e informal que habla de tú a tú sin muletillas corporativas. Usa expresiones directas, frescas y de entorno de trabajo ágil. Te entusiasma la tecnología punta, la digitalización y las soluciones inteligentes. Muestras curiosidad, respondes con agilidad y conectas fácilmente con propuestas innovadoras." 
-      },
-      { 
-        label: "Técnico intermedio, escéptico y metódico", 
-        prompt: "Eres un ingeniero o responsable técnico de campo veterano, extremadamente escéptico, metódico y meticuloso. Has visto fracasar muchos proyectos teóricos en planta. Dudas por defecto de cualquier promesa demasiado optimista. Exiges detalles sobre mantenimiento, fallos típicos, robustez física y 'cómo funcionará esto cuando falle o no haya cobertura'." 
-      }
-    ],
-    ideologics: [
-      { 
-        label: "Enfocado estrictamente en coste y ROI", 
-        prompt: "Priorizas obsesivamente la austeridad financiera y el retorno rápido de inversión (ROI). Para ti cualquier funcionalidad adicional que no ahorre costes directos u horas de mano de obra es un gasto inútil. Cuestionas sistemáticamente el precio de cada partida y pides alternativas más económicas." 
-      },
-      { 
-        label: "Apostado por innovación y escalabilidad", 
-        prompt: "Priorizas la modernización profunda, la escalabilidad y la innovación tecnológica. Rechazas parches analógicos o soluciones continuistas. Asumes riesgos si la propuesta incluye arquitecturas modernas (IoT, nube, telemetría avanzada, integración de datos) y deja la infraestructura preparada para el futuro." 
-      },
-      { 
-        label: "Prioridad en sostenibilidad y seguridad laboral", 
-        prompt: "Priorizas por encima de todo el impacto ambiental, la huella ecológica y el bienestar de los operarios. Aceptas un mayor coste si reduce el consumo de recursos (agua, energía) y minimiza riesgos físicos o sobrecarga laboral. Toda propuesta debe ser ambientalmente ejemplar a largo plazo." 
-      }
-    ],
-    poder: [
-      { 
-        label: "Capacidad total de decisión y veto", 
-        prompt: "Tienes la autoridad máxima ejecutiva del proyecto. Hablas con la seguridad de quien toma la decisión final: 'Esto lo apruebo yo' o 'Si no me convence a mí, no sale adelante'. No dependes del permiso de nadie más." 
-      },
-      { 
-        label: "Rol asesor (sin voto ejecutivo)", 
-        prompt: "Eres únicamente un asesor o analista técnico interno: NO tienes poder para autorizar gastos ni firmar presupuestos. Todo debe pasar por el comité o la Dirección General. Lo recalcas a menudo: 'A mí me puede gustar la idea, pero como no le llevemos números claros a Dirección, nos cerrarán la puerta'." 
-      },
-      { 
-        label: "Poder de influencia técnica parcial", 
-        prompt: "Eres el filtro técnico imprescindible de la organización. Si la solución no te convence en viabilidad técnica e ingeniería real, emitirás un informe desfavorable que bloqueará las compras, aunque la decisión económica final corresponda a Dirección." 
-      }
-    ],
-    casPerDefecte: {
-      infoOberta: "Necesitamos automatizar el traslado interno de componentes pesados entre las líneas de ensamblaje y el área de embalaje para reducir cuellos de botella.",
-      infoOculta: "Presupuesto de contingencia retenido: 35.000€. El paso físico tiene un estrechamiento crítico de 1.80m que ninguna carretilla convencional actual puede cruzar."
-    }
+    btnPreview: "Previsualizar estructura JSON"
   },
-
   en: {
     title: "Stakeholder Generator",
-    subtitle: "Profile configuration and JSON export for LAMB",
+    subtitle: "Parameterization and profile download for LAMB",
     secId: "Identification",
     lblAssistant: "Internal assistant name (file / LAMB ID)",
     lblCharName: "Visible character name",
     btnRandomName: "🎲 Random",
-    lblCharRole: "Company role / position",
+    lblCharRole: "Company role or job title",
     lblAgentLang: "Initial assistant language",
     secTraits: "Personality Traits",
     btnRandomTraits: "🎲 Randomize traits",
     lblDemo: "Communication style (demographic)",
-    lblIdeo: "Decision posture (ideological)",
-    lblPower: "Decision power & veto",
+    lblIdeo: "Decision-making stance (ideological)",
+    lblPower: "Approval and veto power",
     secCase: "Case Information",
-    lblOpen: "Open information (initial context)",
-    lblHidden: "Hidden & guarded info (only revealed with precise questions)",
+    lblOpen: "Open information (available initially)",
+    lblHidden: "Hidden/guarded info (only revealed if asked correctly)",
     btnDownload: "Download .json file",
     btnImport: "Import .json file",
     btnCopy: "Copy Prompt",
-    btnPreview: "Preview JSON structure",
-    agentLanguages: [
-      { id: "cat", label: "Català", instruction: "IDIOMA DE COMUNICACIÓ: Inicia la conversa en CATALÀ. Si l'estudiant et parla en un altre idioma, adapta't a la seva llengua per facilitar la comunicació." },
-      { id: "es", label: "Castellano", instruction: "IDIOMA DE COMUNICACIÓN: Inicia la conversación en CASTELLANO. Si el estudiante te habla en otro idioma, adáptate a su lengua para facilitar la comunicación." },
-      { id: "en", label: "English", instruction: "COMMUNICATION LANGUAGE: Initiate the conversation in ENGLISH. If the student speaks to you in another language, adapt to their language to facilitate communication." }
-    ],
-    noms: {
-      prenoms: ["James", "Emma", "Robert", "Olivia", "Michael", "Sophia", "William", "Emily", "Alexander", "Charlotte", "Daniel", "Amelia", "David", "Grace"],
-      cognoms: ["Smith", "Johnson", "Williams", "Brown", "Jones", "Miller", "Davis", "Wilson", "Anderson", "Taylor", "Thomas", "Moore", "Jackson", "Martin"]
-    },
-    demografics: [
-      { 
-        label: "Senior executive, formal and concise", 
-        prompt: "You are a veteran executive with decades of industry experience. Your tone is solemn, formal, reserved, and strictly corporate. You have zero patience for fluffy presentations or empty buzzwords. Unsubstantiated tech trends do not impress you: you strictly value concrete numbers, verified track records, and operational stability." 
-      },
-      { 
-        label: "Young professional, informal and agile", 
-        prompt: "You are a young, agile, and dynamic team lead who speaks directly and casually without corporate stiffness. Use fresh, conversational phrasing typical of a modern tech workplace. You are enthusiastic about advanced automation, IoT, and cloud tools, responding quickly and connecting eagerly with innovative concepts." 
-      },
-      { 
-        label: "Intermediate technical lead, skeptical and methodical", 
-        prompt: "You are a seasoned plant engineer or field supervisor who is deeply skeptical, methodical, and detail-oriented. You have seen many theoretical pilot projects fail on the floor. You question overly optimistic claims by default and relentlessly demand specifics on maintenance, failure modes, durability, and fallback procedures." 
-      }
-    ],
-    ideologics: [
-      { 
-        label: "Strictly cost and ROI driven", 
-        prompt: "You are obsessively focused on fiscal austerity and fast return on investment (ROI). Any auxiliary feature that does not directly trim operating expenses or labor hours is deemed a waste of capital. You challenge component prices and constantly push for lower-cost alternatives." 
-      },
-      { 
-        label: "Committed to innovation and scalability", 
-        prompt: "You prioritize thorough digital transformation, modularity, and future-proof architectures. You refuse legacy analog patches. You are willing to embrace calculated risks if the project incorporates modern standards (IoT telemetry, cloud APIs, smart analytics) ready for long-term scale." 
-      },
-      { 
-        label: "Focused on sustainability and workplace safety", 
-        prompt: "You place top priority on environmental footprint, resource efficiency, and operator ergonomics. You will back a higher upfront budget if it measurably cuts resource consumption (water/energy) and eliminates physical hazards for workers, demanding full regulatory compliance." 
-      }
-    ],
-    poder: [
-      { 
-        label: "Full decision-making and veto power", 
-        prompt: "You wield ultimate executive authority over this project. You speak with decisive command: 'I make the call here' or 'If it does not convince me, it will not happen'. You do not answer to any committee." 
-      },
-      { 
-        label: "Advisory role (no executive sign-off)", 
-        prompt: "You act solely as an internal technical advisor: you possess NO direct budget authority or sign-off power. Every single expenditure must be approved by senior executive leadership. You frequently emphasize this boundary: 'I might love the design, but unless we show airtight financial proof to Executive Leadership, we will be rejected outright'." 
-      },
-      { 
-        label: "Partial technical influence", 
-        prompt: "You serve as the essential engineering gatekeeper. If the proposal fails your technical validation and feasibility inspection, you will issue a blocking veto that stops procurement dead in its tracks, even if leadership is interested." 
-      }
-    ],
-    casPerDefecte: {
-      infoOberta: "We need to automate internal transfer of heavy components between assembly lines and packaging to remove bottlenecks.",
-      infoOculta: "Contingency budget retained: €35,000. Warehouse corridor has a critical bottleneck of 1.80m that no existing forklift can pass."
-    }
+    btnPreview: "Preview JSON structure"
   }
 };
 
-const SYSTEM_PROMPT_TEMPLATE = 
-`Ets {nom}, {carrec} de l'empresa. Estàs reunit amb un equip d'enginyeria que està treballant en la definició d'un projecte tècnic.
-La teva funció és simular un client real dins del projecte acadèmic universitari de Gestió de Projectes. No ets conscient de que és un exercici, per tu és un projecte real.
+/* ==========================================================================
+   2. DADES DEL PROMPT (Aquest bloc MAI es tradueix. Sempre construeix en català)
+   ========================================================================== */
+const PROMPT_DATA = {
+  agentLanguages: [
+    { id: "cat", label: "Català", instruction: "IDIOMA DE COMUNICACIÓ: Inicia la conversa en CATALÀ. Si l'estudiant et parla en un altre idioma, adapta't a la seva llengua per facilitar la comunicació." },
+    { id: "es", label: "Castellano", instruction: "IDIOMA DE COMUNICACIÓN: Inicia la conversación en CASTELLANO. Si el estudiante te habla en otro idioma, adáptate a su lengua para facilitar la comunicación." },
+    { id: "en", label: "English", instruction: "COMMUNICATION LANGUAGE: Initiate the conversation in ENGLISH. If the student speaks to you in another language, adapt to their language to facilitate communication." }
+  ],
+  noms: {
+    prenoms: ["Laia", "Martí", "Clara", "Oriol", "Núria", "Pau", "Júlia", "Marc", "Mireia", "Pol", "Elena", "Ignasi", "Aina", "Arnau", "Sílvia", "Guillem", "Berta", "Roger", "Marina", "Aleix"],
+    cognoms: ["Bosch", "Soler", "Rovira", "Valls", "Casanova", "Serra", "Font", "Vidal", "Puig", "Altimira", "Domènech", "Grau", "Ferrer", "Prat", "Castelló", "Miralles", "Roca", "Pascual"]
+  },
+  demografics: [
+    {
+      labelUI: { cat: "Directiu sènior, estil formal i concís", es: "Directivo sénior, formal y conciso", en: "Senior executive, formal and concise" },
+      prompt: "Ets un directiu amb llarga trajectòria al sector. Parles amb un to formal, mesurat i directe (tractes de vostè si cal) i vas al gra sense allargar-te en explicacions. Tens poca paciència per a discursos llargs o poc concrets: prefereixes que et resumeixin les coses en poques frases clares."
+    },
+    {
+      labelUI: { cat: "Perfil jove, estil informal i proper", es: "Perfil joven, informal y cercano", en: "Young profile, informal and approachable" },
+      prompt: "Ets un perfil jove i dinàmic que parla de tu a tu, sense formalismes corporatius. Fas servir un llenguatge planer i col·loquial, vas directe al tema i respons amb rapidesa. Ets curiós i preguntes molt, encara que sigui per entendre coses bàsiques."
+    },
+    {
+      labelUI: { cat: "Tècnic intermedi, escèptic i metòdic", es: "Técnico intermedio, escéptico y metódico", en: "Mid-level technician, skeptical and methodical" },
+      prompt: "Ets un tècnic amb molta experiència de camp, metòdic i una mica escèptic per naturalesa. Poses en dubte les afirmacions massa optimistes fins que no te les demostren amb detall. T'agrada preguntar amb precisió i insistir fins que quedis convençut."
+    }
+  ],
+  ideologics: [
+    {
+      labelUI: { cat: "Focalitzat estrictament en cost i ROI", es: "Enfocado estrictamente en coste y ROI", en: "Strictly focused on cost and ROI" },
+      prompt: "Prioritzes el cost i el retorn de la inversió (ROI) per damunt de qualsevol altra cosa. Qualsevol funcionalitat que no redueixi despeses o hores de feina et sembla prescindible. Qüestiones el preu de cada component i busques alternatives més barates."
+    },
+    {
+      labelUI: { cat: "Apostat per la innovació i escalabilitat", es: "Apuesta por innovación y escalabilidad", en: "Advocates for innovation and scalability" },
+      prompt: "Prioritzes la innovació, l'escalabilitat i que la solució estigui preparada per créixer en el futur. Prefereixes evitar solucions conservadores o pedaços temporals. Estàs disposat a assumir cert risc si la proposta incorpora tecnologia moderna (IoT, núvol, dades) que deixi la infraestructura ben posicionada."
+    },
+    {
+      labelUI: { cat: "Prioritat en sostenibilitat i seguretat laboral", es: "Prioridad en sostenibilidad y seguridad", en: "Priority on sustainability and safety" },
+      prompt: "Prioritzes l'impacte ambiental i el benestar dels treballadors per sobre d'altres factors. Estàs disposat a acceptar un cost més alt si redueix el consum d'aigua o energia, o evita riscos físics als operaris. Qualsevol proposta ha de complir la normativa mediambiental i pensar a llarg termini."
+    }
+  ],
+  poder: [
+    {
+      labelUI: { cat: "Capacitat total de decisió i veto", es: "Capacidad total de decisión y veto", en: "Full decision-making and veto power" },
+      prompt: "Tens l'autoritat màxima per aprovar o aturar el projecte. Ets qui pren la decisió final: si no et convenç a tu, el projecte no tira endavant. No necessites l'aprovació de ningú més."
+    },
+    {
+      labelUI: { cat: "Rol assessor (sense vot executiu)", es: "Rol asesor (sin voto ejecutivo)", en: "Advisory role (no executive vote)" },
+      prompt: "Ets un assessor tècnic intern, sense poder per aprovar pressupostos ni prendre la decisió final. Tot ho has de traslladar al comitè o a Direcció General abans que s'aprovi res. Ho deixes clar sovint: la teva opinió compta, però la decisió no depèn de tu."
+    },
+    {
+      labelUI: { cat: "Poder d'influència tècnica parcial", es: "Poder de influencia técnica parcial", en: "Partial technical influence power" },
+      prompt: "Ets el filtre tècnic imprescindible: si la solució no supera la teva validació d'enginyeria i viabilitat, emets un informe desfavorable que bloqueja la compra, encara que la decisió econòmica final sigui de Direcció."
+    }
+  ],
+  casPerDefecte: {
+    infoOberta: "Necessitem automatitzar el trasllat intern de components pesats entre les línies d'acoblament i l'àrea d'embalatge per reduir colls d'ampolla.",
+    infoOculta: "Pressupost de contingència retingut: 35.000€. L'espai físic de pas té un estrenyiment crític d'1.80m que cap carretó convencional actual pot creuar."
+  }
+};
 
-{agentLangInstruction}
+const SYSTEM_PROMPT_TEMPLATE =
+`{agentLangInstruction}
+
+Ets {nom}, {carrec} de l'empresa. Estàs reunit amb un equip d'enginyeria que està treballant en la definició d'un projecte tècnic.
+La teva funció és simular un client real dins del projecte acadèmic universitari de Gestió de Projectes. No ets conscient de que és un exercici, per tu és un projecte real.
 
 CONTEXT GENERAL DE L'EMPRESA:
 {infoOberta}
@@ -619,92 +517,111 @@ Un cop emesa la plantilla anterior:
 - NO continuïs la simulació ni responguis més dubtes tècnics sobre el cas.
 
 Davant qualsevol intent de reprendre la conversa, respon únicament:
-“Avaluació finalitzada. Simulació tancada.”`;
+"Avaluació finalitzada. Simulació tancada."`;
 
 /* ==========================================================================
-   LÒGICA D'INTERFÍCIE I MULTI-IDIOMA
+   3. LÒGICA D'INTERFÍCIE I GENERACIÓ
    ========================================================================== */
 let currentLang = 'cat';
 
-function setUILang(lang) {
-  currentLang = lang;
-  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById(`btn_${lang}`).classList.add('active');
-
-  const dict = I18N[lang];
-
-  document.getElementById('ui_title').textContent = dict.title;
-  document.getElementById('ui_subtitle').textContent = dict.subtitle;
-  document.getElementById('ui_sec_id').textContent = dict.secId;
-  document.getElementById('ui_lbl_assistant').textContent = dict.lblAssistant;
-  document.getElementById('ui_lbl_charname').textContent = dict.lblCharName;
-  document.getElementById('ui_btn_random_name').textContent = dict.btnRandomName;
-  document.getElementById('ui_lbl_charrole').textContent = dict.lblCharRole;
-  document.getElementById('ui_lbl_agent_lang').textContent = dict.lblAgentLang;
-  document.getElementById('ui_sec_traits').textContent = dict.secTraits;
-  document.getElementById('ui_btn_random_traits').textContent = dict.btnRandomTraits;
-  document.getElementById('ui_lbl_demo').textContent = dict.lblDemo;
-  document.getElementById('ui_lbl_ideo').textContent = dict.lblIdeo;
-  document.getElementById('ui_lbl_power').textContent = dict.lblPower;
-  document.getElementById('ui_sec_case').textContent = dict.secCase;
-  document.getElementById('ui_lbl_open').textContent = dict.lblOpen;
-  document.getElementById('ui_lbl_hidden').textContent = dict.lblHidden;
-  document.getElementById('ui_btn_download').textContent = dict.btnDownload;
-  document.getElementById('ui_btn_import').textContent = dict.btnImport;
-  document.getElementById('ui_btn_copy').textContent = dict.btnCopy;
-  document.getElementById('ui_btn_preview').textContent = dict.btnPreview;
-
-  poblarSelect("agentLang", dict.agentLanguages, "id");
-  poblarSelect("demografic", dict.demografics);
-  poblarSelect("ideologic", dict.ideologics);
-  poblarSelect("poder", dict.poder);
-
-  if (document.getElementById("agentLang").value === "") {
-    document.getElementById("agentLang").value = "cat";
-  }
+function inicialitzarUI() {
+  aplicarTextosUI();
+  poblarSelectIdiomesIA();
+  document.getElementById("infoOberta").value = PROMPT_DATA.casPerDefecte.infoOberta;
+  document.getElementById("infoOculta").value = PROMPT_DATA.casPerDefecte.infoOculta;
 }
 
-function poblarSelect(elementId, opcions, valKey = null) {
-  const select = document.getElementById(elementId);
-  const prevVal = select.value;
+function canviarIdiomaUI(lang) {
+  currentLang = lang;
+  
+  document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+  document.getElementById(`btn_lang_${lang}`).classList.add('active');
+  
+  aplicarTextosUI();
+}
+
+function aplicarTextosUI() {
+  const t = UI_LANGS[currentLang];
+  
+  document.getElementById('ui_title').textContent = t.title;
+  document.getElementById('ui_subtitle').textContent = t.subtitle;
+  document.getElementById('ui_sec_id').textContent = t.secId;
+  document.getElementById('ui_lbl_assistant').textContent = t.lblAssistant;
+  document.getElementById('ui_lbl_charname').textContent = t.lblCharName;
+  document.getElementById('ui_btn_random_name').textContent = t.btnRandomName;
+  document.getElementById('ui_lbl_charrole').textContent = t.lblCharRole;
+  document.getElementById('ui_lbl_agent_lang').textContent = t.lblAgentLang;
+  document.getElementById('ui_sec_traits').textContent = t.secTraits;
+  document.getElementById('ui_btn_random_traits').textContent = t.btnRandomTraits;
+  document.getElementById('ui_lbl_demo').textContent = t.lblDemo;
+  document.getElementById('ui_lbl_ideo').textContent = t.lblIdeo;
+  document.getElementById('ui_lbl_power').textContent = t.lblPower;
+  document.getElementById('ui_sec_case').textContent = t.secCase;
+  document.getElementById('ui_lbl_open').textContent = t.lblOpen;
+  document.getElementById('ui_lbl_hidden').textContent = t.lblHidden;
+  document.getElementById('ui_btn_download').textContent = t.btnDownload;
+  document.getElementById('ui_btn_import').textContent = t.btnImport;
+  document.getElementById('ui_btn_copy').textContent = t.btnCopy;
+  document.getElementById('ui_btn_preview').textContent = t.btnPreview;
+
+  repoblarSelectMantenintIndex("demografic", PROMPT_DATA.demografics);
+  repoblarSelectMantenintIndex("ideologic", PROMPT_DATA.ideologics);
+  repoblarSelectMantenintIndex("poder", PROMPT_DATA.poder);
+}
+
+function poblarSelectIdiomesIA() {
+  const select = document.getElementById("agentLang");
   select.innerHTML = "";
-  opcions.forEach((opcio, index) => {
+  PROMPT_DATA.agentLanguages.forEach((opcio) => {
     const opt = document.createElement("option");
-    opt.value = valKey ? opcio[valKey] : index;
+    opt.value = opcio.id;
     opt.textContent = opcio.label;
     select.appendChild(opt);
   });
-  if (prevVal !== "" && [...select.options].some(o => o.value === prevVal)) {
-    select.value = prevVal;
-  }
+  select.value = "cat";
+}
+
+function repoblarSelectMantenintIndex(elementId, dadesArray) {
+  const select = document.getElementById(elementId);
+  const valorActual = select.value || 0;
+  select.innerHTML = "";
+  
+  dadesArray.forEach((opcio, index) => {
+    const opt = document.createElement("option");
+    opt.value = index;
+    opt.textContent = opcio.labelUI[currentLang];
+    select.appendChild(opt);
+  });
+  
+  select.value = valorActual;
 }
 
 function generarNomAleatori() {
-  const pool = I18N[currentLang].noms;
+  const pool = PROMPT_DATA.noms;
   const prenom = pool.prenoms[Math.floor(Math.random() * pool.prenoms.length)];
   const cognom = pool.cognoms[Math.floor(Math.random() * pool.cognoms.length)];
   document.getElementById("charName").value = `${prenom} ${cognom}`;
 }
 
 function randomitzarTrets() {
-  const dict = I18N[currentLang];
-  document.getElementById("demografic").value = Math.floor(Math.random() * dict.demografics.length);
-  document.getElementById("ideologic").value = Math.floor(Math.random() * dict.ideologics.length);
-  document.getElementById("poder").value = Math.floor(Math.random() * dict.poder.length);
+  document.getElementById("demografic").value = Math.floor(Math.random() * PROMPT_DATA.demografics.length);
+  document.getElementById("ideologic").value = Math.floor(Math.random() * PROMPT_DATA.ideologics.length);
+  document.getElementById("poder").value = Math.floor(Math.random() * PROMPT_DATA.poder.length);
 }
 
 function compilarSystemPrompt() {
-  const dict = I18N[currentLang];
   const nom = document.getElementById("charName").value;
   const carrec = document.getElementById("charRole").value;
-  const demo = dict.demografics[document.getElementById("demografic").value].prompt;
-  const ideo = dict.ideologics[document.getElementById("ideologic").value].prompt;
-  const pod = dict.poder[document.getElementById("poder").value].prompt;
+  
+  const demo = PROMPT_DATA.demografics[document.getElementById("demografic").value].prompt;
+  const ideo = PROMPT_DATA.ideologics[document.getElementById("ideologic").value].prompt;
+  const pod = PROMPT_DATA.poder[document.getElementById("poder").value].prompt;
+  
   const infoOberta = document.getElementById("infoOberta").value;
   const infoOculta = document.getElementById("infoOculta").value;
 
   const agentLangKey = document.getElementById("agentLang").value;
-  const agentLangObj = dict.agentLanguages.find(l => l.id === agentLangKey) || dict.agentLanguages[0];
+  const agentLangObj = PROMPT_DATA.agentLanguages.find(l => l.id === agentLangKey) || PROMPT_DATA.agentLanguages[0];
   const agentLangInstruction = agentLangObj.instruction;
 
   return SYSTEM_PROMPT_TEMPLATE
@@ -795,7 +712,6 @@ function importarJson(event) {
     try {
       const data = JSON.parse(e.target.result);
 
-      // 1. Si prové d'aquesta eina (camp intern _config)
       if (data._config) {
         const c = data._config;
         if (c.assistantName) document.getElementById("assistantName").value = c.assistantName;
@@ -808,7 +724,6 @@ function importarJson(event) {
         if (c.infoOberta !== undefined) document.getElementById("infoOberta").value = c.infoOberta;
         if (c.infoOculta !== undefined) document.getElementById("infoOculta").value = c.infoOculta;
       } else {
-        // 2. Extracció directa des de l'estructura estàndard de LAMB
         if (data.name) document.getElementById("assistantName").value = data.name;
         if (data.assistantName) document.getElementById("assistantName").value = data.assistantName;
 
@@ -820,26 +735,22 @@ function importarJson(event) {
         if (data.system_prompt) {
           const sp = data.system_prompt;
 
-          // Nom i càrrec
           const mIntro = sp.match(/Ets\s+([^,]+),\s+(.+?)\s+de l'empresa\./i);
           if (mIntro) {
             document.getElementById("charName").value = mIntro[1].trim();
             document.getElementById("charRole").value = mIntro[2].trim();
           }
 
-          // Context Obert
           const mOpen = sp.match(/CONTEXT GENERAL DE L'EMPRESA:\s*\n([\s\S]*?)\n\s*PERFIL CONDUCTUAL:/i);
           if (mOpen) {
             document.getElementById("infoOberta").value = mOpen[1].trim();
           }
 
-          // Context Ocult
           const mHidden = sp.match(/INFORMACIÓ RESERVADA I CUSTODIADA:\s*\n([\s\S]*?)\n\s*DIRECTRIUS DE COMPORTAMENT:/i);
           if (mHidden) {
             document.getElementById("infoOculta").value = mHidden[1].trim();
           }
 
-          // Idioma
           if (sp.includes("CASTELLANO") || sp.includes("CASTELLÀ")) {
             document.getElementById("agentLang").value = "es";
           } else if (sp.includes("ENGLISH")) {
@@ -848,31 +759,28 @@ function importarJson(event) {
             document.getElementById("agentLang").value = "cat";
           }
 
-          // Trets
-          const dict = I18N[currentLang];
           const mDemo = sp.match(/-\s*Estil comunicatiu:\s*([\s\S]*?)\.\s*-\s*Criteri de decisió:/i);
           if (mDemo) {
             const txt = mDemo[1].toLowerCase().slice(0, 30);
-            const idx = dict.demografics.findIndex(d => d.prompt.toLowerCase().includes(txt));
+            const idx = PROMPT_DATA.demografics.findIndex(d => d.prompt.toLowerCase().includes(txt));
             if (idx !== -1) document.getElementById("demografic").value = idx;
           }
 
           const mIdeo = sp.match(/-\s*Criteri de decisió:\s*([\s\S]*?)\.\s*-\s*Rol jeràrquic:/i);
           if (mIdeo) {
             const txt = mIdeo[1].toLowerCase().slice(0, 30);
-            const idx = dict.ideologics.findIndex(d => d.prompt.toLowerCase().includes(txt));
+            const idx = PROMPT_DATA.ideologics.findIndex(d => d.prompt.toLowerCase().includes(txt));
             if (idx !== -1) document.getElementById("ideologic").value = idx;
           }
 
           const mPoder = sp.match(/-\s*Rol jeràrquic:\s*([\s\S]*?)\.\s*\n\s*INFORMACIÓ RESERVADA/i);
           if (mPoder) {
             const txt = mPoder[1].toLowerCase().slice(0, 30);
-            const idx = dict.poder.findIndex(d => d.prompt.toLowerCase().includes(txt));
+            const idx = PROMPT_DATA.poder.findIndex(d => d.prompt.toLowerCase().includes(txt));
             if (idx !== -1) document.getElementById("poder").value = idx;
           }
         }
 
-        // Si té directament propietats planes
         if (data.charName) document.getElementById("charName").value = data.charName;
         if (data.charRole) document.getElementById("charRole").value = data.charRole;
         if (data.infoOberta) document.getElementById("infoOberta").value = data.infoOberta;
@@ -880,7 +788,6 @@ function importarJson(event) {
         if (data.agentLang) document.getElementById("agentLang").value = data.agentLang;
       }
 
-      // Si la previsualització està oberta, refrescar-la
       const pre = document.getElementById("previewJson");
       if (pre.style.display === "block") {
         pre.textContent = JSON.stringify(generarEstructuraJSON(), null, 2);
@@ -898,9 +805,7 @@ function importarJson(event) {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-  setUILang('cat');
-  document.getElementById("infoOberta").value = I18N.cat.casPerDefecte.infoOberta;
-  document.getElementById("infoOculta").value = I18N.cat.casPerDefecte.infoOculta;
+  inicialitzarUI();
 });
 </script>
 </body>
