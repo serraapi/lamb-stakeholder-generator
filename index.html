@@ -17,8 +17,28 @@
     --accent-hover: #e58869;
     --btn-secondary: #32322d;
     --btn-secondary-hover: #3d3d37;
+    --pre-bg: #121210;
+    --pre-text: #a8c49e;
     --radius: 12px;
     --radius-sm: 8px;
+    --success: #a8c49e;
+    --error: #e58869;
+  }
+
+  body.light-theme {
+    --bg: #f6f5f0;
+    --card-bg: #ffffff;
+    --input-bg: #eeece4;
+    --border: #dcd9cd;
+    --border-focus: #8e8b80;
+    --text-primary: #191816;
+    --text-secondary: #6e6b62;
+    --accent: #d97757;
+    --accent-hover: #c46344;
+    --btn-secondary: #e6e3d8;
+    --btn-secondary-hover: #dcd8cb;
+    --pre-bg: #eeece4;
+    --pre-text: #2f6832;
   }
 
   * { box-sizing: border-box; }
@@ -31,6 +51,7 @@
     padding: 40px 16px;
     display: flex;
     justify-content: center;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   .wrap {
@@ -42,7 +63,7 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 28px;
+    margin-bottom: 24px;
     gap: 16px;
   }
 
@@ -59,11 +80,37 @@
     margin: 0;
   }
 
+  .header-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .theme-btn {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    border-radius: var(--radius-sm);
+    padding: 6px 10px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    height: 31px;
+  }
+
+  .theme-btn:hover {
+    background-color: var(--btn-secondary);
+    border-color: var(--border-focus);
+  }
+
   .lang-selector {
     display: flex;
-    gap: 6px;
+    gap: 4px;
     background-color: var(--card-bg);
-    padding: 4px;
+    padding: 3px;
     border-radius: var(--radius-sm);
     border: 1px solid var(--border);
   }
@@ -74,7 +121,7 @@
     color: var(--text-secondary);
     font-size: 0.75rem;
     font-weight: 600;
-    padding: 6px 10px;
+    padding: 5px 9px;
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.15s ease;
@@ -89,12 +136,19 @@
     color: var(--text-primary);
   }
 
+  .top-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 16px;
+  }
+
   .card {
     background-color: var(--card-bg);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 20px;
     margin-bottom: 16px;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
   }
 
   .card-title {
@@ -125,7 +179,7 @@
     padding: 10px 12px;
     font-size: 0.88rem;
     font-family: inherit;
-    transition: border-color 0.15s ease;
+    transition: border-color 0.15s ease, background-color 0.2s ease;
   }
 
   input[type="text"]:focus, select:focus, textarea:focus {
@@ -156,7 +210,7 @@
     font-weight: 500;
     padding: 9px 14px;
     font-family: inherit;
-    transition: all 0.15s ease;
+    transition: all 0.2s ease;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -195,12 +249,12 @@
   }
 
   pre {
-    background-color: #121210;
+    background-color: var(--pre-bg);
+    color: var(--pre-text);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     padding: 14px;
     font-size: 0.78rem;
-    color: #a8c49e;
     overflow-x: auto;
     max-height: 300px;
     display: none;
@@ -215,28 +269,36 @@
       <h1 id="ui_title">Generador de Stakeholders</h1>
       <p class="subtitle" id="ui_subtitle">Parametrització i descàrrega de perfils per a LAMB</p>
     </div>
-    <div class="lang-selector">
-      <button class="lang-btn active" onclick="canviarIdiomaUI('cat')" id="btn_lang_cat">CAT</button>
-      <button class="lang-btn" onclick="canviarIdiomaUI('es')" id="btn_lang_es">ES</button>
-      <button class="lang-btn" onclick="canviarIdiomaUI('en')" id="btn_lang_en">EN</button>
+    <div class="header-controls">
+      <button class="theme-btn" id="themeToggle" onclick="alternarTema()" title="Canviar mode fosc/clar">☀️</button>
+      <div class="lang-selector">
+        <button class="lang-btn active" onclick="canviarIdiomaUI('cat')" id="btn_lang_cat">CAT</button>
+        <button class="lang-btn" onclick="canviarIdiomaUI('es')" id="btn_lang_es">ES</button>
+        <button class="lang-btn" onclick="canviarIdiomaUI('en')" id="btn_lang_en">EN</button>
+      </div>
     </div>
   </header>
 
+  <div class="top-toolbar">
+    <button class="btn btn-secondary" id="ui_btn_import" onclick="document.getElementById('fileInput').click()">Importar arxiu .json</button>
+    <input type="file" id="fileInput" accept=".json" style="display:none;" onchange="importarJson(event)">
+  </div>
+
   <div class="card">
     <div class="card-title" id="ui_sec_id">Identificació</div>
-    <label id="ui_lbl_assistant">Nom intern de l'assistent (arxiu / identificador LAMB)</label>
+    <label for="assistantName" id="ui_lbl_assistant">Nom intern de l'assistent (arxiu / identificador LAMB)</label>
     <input type="text" id="assistantName" value="stakeholder_logistica">
 
-    <label id="ui_lbl_charname">Nom del personatge visible</label>
+    <label for="charName" id="ui_lbl_charname">Nom del personatge visible</label>
     <div class="input-with-button">
       <input type="text" id="charName" value="Laia Bosch">
       <button class="btn btn-secondary" id="ui_btn_random_name" onclick="generarNomAleatori()">🎲 Aleatori</button>
     </div>
 
-    <label id="ui_lbl_charrole">Càrrec o rol a l'empresa</label>
+    <label for="charRole" id="ui_lbl_charrole">Càrrec o rol a l'empresa</label>
     <input type="text" id="charRole" value="Directora d'Operacions">
 
-    <label id="ui_lbl_agent_lang">Idioma inicial de l'assistent</label>
+    <label for="agentLang" id="ui_lbl_agent_lang">Idioma inicial de l'assistent</label>
     <select id="agentLang"></select>
   </div>
 
@@ -246,39 +308,34 @@
       <button class="btn btn-secondary" id="ui_btn_random_traits" onclick="randomitzarTrets()">🎲 Aleatoritzar trets</button>
     </div>
 
-    <label id="ui_lbl_demo">Estil comunicatiu (demogràfic)</label>
+    <label for="demografic" id="ui_lbl_demo">Estil comunicatiu (demogràfic)</label>
     <select id="demografic"></select>
 
-    <label id="ui_lbl_ideo">Postura davant les decisions (ideològic)</label>
+    <label for="ideologic" id="ui_lbl_ideo">Postura davant les decisions (ideològic)</label>
     <select id="ideologic"></select>
 
-    <label id="ui_lbl_power">Poder d'aprovació i veto</label>
+    <label for="poder" id="ui_lbl_power">Poder d'aprovació i veto</label>
     <select id="poder"></select>
   </div>
 
   <div class="card">
     <div class="card-title" id="ui_sec_case">Informació del Cas</div>
-    <label id="ui_lbl_open">Informació oberta (disponible d'inici)</label>
+    <label for="infoOberta" id="ui_lbl_open">Informació oberta (disponible d'inici)</label>
     <textarea id="infoOberta"></textarea>
 
-    <label id="ui_lbl_hidden">Informació oculta i custodiada (només si pregunten correctament)</label>
+    <label for="infoOculta" id="ui_lbl_hidden">Informació oculta i custodiada (només si pregunten correctament)</label>
     <textarea id="infoOculta"></textarea>
   </div>
 
   <div class="actions">
     <button class="btn btn-primary" id="ui_btn_download" onclick="descarregarJson()">Descarregar arxiu .json</button>
-    <button class="btn btn-secondary" id="ui_btn_import" onclick="document.getElementById('fileInput').click()">Importar arxiu .json</button>
     <button class="btn btn-secondary" id="ui_btn_copy" onclick="copiarPromptPortapapers()">Copiar Prompt</button>
     <button class="btn btn-secondary" id="ui_btn_preview" onclick="alternarPrevisualitzacio()">Previsualitzar estructura JSON</button>
-    <input type="file" id="fileInput" accept=".json" style="display:none;" onchange="importarJson(event)">
     <pre id="previewJson"></pre>
   </div>
 </div>
 
 <script>
-/* ==========================================================================
-   1. DICCIONARI D'INTERFÍCIE VISUAL (Només canvia etiquetes i botons)
-   ========================================================================== */
 const UI_LANGS = {
   cat: {
     title: "Generador de Stakeholders",
@@ -348,19 +405,29 @@ const UI_LANGS = {
   }
 };
 
-/* ==========================================================================
-   2. DADES DEL PROMPT (Aquest bloc MAI es tradueix. Sempre construeix en català)
-   ========================================================================== */
+const NOMS_POOL = {
+  prenoms: [
+    "Laia", "Marc", "Pau", "Oriol", "Júlia", "Pol", "Aina", "Arnau", "Mireia",
+    "Guillem", "Núria", "Martí", "Clara", "Roger", "Berta", "Aleix", "Ignasi",
+    "Marina", "Sílvia",
+    "Carlos", "Lucía", "Javier", "Elena", "David", "Marta", "Pablo", "Sara",
+    "Daniel", "Carmen", "Hugo"
+  ],
+  cognoms: [
+    "Soler", "Bosch", "Puig", "Serra", "Rovira", "Valls", "Prat", "Vidal",
+    "Domènech", "Font", "Grau", "Ferrer", "Castelló", "Miralles", "Roca",
+    "Pascual", "Altimira", "Casanova", "Ribas",
+    "García", "Martínez", "López", "Fernández", "Sánchez", "Rodríguez", "Gómez",
+    "Navarro", "Ruiz", "Pérez", "Moreno"
+  ]
+};
+
 const PROMPT_DATA = {
   agentLanguages: [
     { id: "cat", label: "Català", instruction: "IDIOMA DE COMUNICACIÓ: Inicia la conversa en CATALÀ. Si l'estudiant et parla en un altre idioma, adapta't a la seva llengua per facilitar la comunicació." },
     { id: "es", label: "Castellano", instruction: "IDIOMA DE COMUNICACIÓN: Inicia la conversación en CASTELLANO. Si el estudiante te habla en otro idioma, adáptate a su lengua para facilitar la comunicación." },
     { id: "en", label: "English", instruction: "COMMUNICATION LANGUAGE: Initiate the conversation in ENGLISH. If the student speaks to you in another language, adapt to their language to facilitate communication." }
   ],
-  noms: {
-    prenoms: ["Laia", "Martí", "Clara", "Oriol", "Núria", "Pau", "Júlia", "Marc", "Mireia", "Pol", "Elena", "Ignasi", "Aina", "Arnau", "Sílvia", "Guillem", "Berta", "Roger", "Marina", "Aleix"],
-    cognoms: ["Bosch", "Soler", "Rovira", "Valls", "Casanova", "Serra", "Font", "Vidal", "Puig", "Altimira", "Domènech", "Grau", "Ferrer", "Prat", "Castelló", "Miralles", "Roca", "Pascual"]
-  },
   demografics: [
     {
       labelUI: { cat: "Directiu sènior, estil formal i concís", es: "Directivo sénior, formal y conciso", en: "Senior executive, formal and concise" },
@@ -519,12 +586,29 @@ Un cop emesa la plantilla anterior:
 Davant qualsevol intent de reprendre la conversa, respon únicament:
 "Avaluació finalitzada. Simulació tancada."`;
 
-/* ==========================================================================
-   3. LÒGICA D'INTERFÍCIE I GENERACIÓ
-   ========================================================================== */
 let currentLang = 'cat';
 
+function alternarTema() {
+  const isLight = document.body.classList.toggle('light-theme');
+  const btn = document.getElementById('themeToggle');
+  btn.textContent = isLight ? '🌙' : '☀️';
+  localStorage.setItem('theme_preference', isLight ? 'light' : 'dark');
+}
+
+function carregarTemaPreferit() {
+  const guardat = localStorage.getItem('theme_preference');
+  const btn = document.getElementById('themeToggle');
+  if (guardat === 'light') {
+    document.body.classList.add('light-theme');
+    btn.textContent = '🌙';
+  } else {
+    document.body.classList.remove('light-theme');
+    btn.textContent = '☀️';
+  }
+}
+
 function inicialitzarUI() {
+  carregarTemaPreferit();
   aplicarTextosUI();
   poblarSelectIdiomesIA();
   document.getElementById("infoOberta").value = PROMPT_DATA.casPerDefecte.infoOberta;
@@ -533,10 +617,8 @@ function inicialitzarUI() {
 
 function canviarIdiomaUI(lang) {
   currentLang = lang;
-  
   document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
   document.getElementById(`btn_lang_${lang}`).classList.add('active');
-  
   aplicarTextosUI();
 }
 
@@ -597,9 +679,8 @@ function repoblarSelectMantenintIndex(elementId, dadesArray) {
 }
 
 function generarNomAleatori() {
-  const pool = PROMPT_DATA.noms;
-  const prenom = pool.prenoms[Math.floor(Math.random() * pool.prenoms.length)];
-  const cognom = pool.cognoms[Math.floor(Math.random() * pool.cognoms.length)];
+  const prenom = NOMS_POOL.prenoms[Math.floor(Math.random() * NOMS_POOL.prenoms.length)];
+  const cognom = NOMS_POOL.cognoms[Math.floor(Math.random() * NOMS_POOL.cognoms.length)];
   document.getElementById("charName").value = `${prenom} ${cognom}`;
 }
 
@@ -637,12 +718,56 @@ function compilarSystemPrompt() {
 
 function copiarPromptPortapapers() {
   const promptText = compilarSystemPrompt();
-  navigator.clipboard.writeText(promptText).then(() => {
-    alert("Prompt copiat al portapapers!");
-  }).catch(err => {
-    console.error('Error al copiar: ', err);
-    alert("No s'ha pogut copiar el text.");
-  });
+  const btn = document.getElementById("ui_btn_copy");
+  const textOriginal = UI_LANGS[currentLang].btnCopy;
+
+  const feedbackExit = () => {
+    btn.textContent = "✓ Copiat al portapapers!";
+    btn.style.borderColor = "var(--success)";
+    btn.style.color = "var(--success)";
+    setTimeout(() => {
+      btn.textContent = textOriginal;
+      btn.style.borderColor = "";
+      btn.style.color = "";
+    }, 2200);
+  };
+
+  const feedbackError = () => {
+    btn.textContent = "⚠ Error al copiar";
+    btn.style.borderColor = "var(--error)";
+    btn.style.color = "var(--error)";
+    setTimeout(() => {
+      btn.textContent = textOriginal;
+      btn.style.borderColor = "";
+      btn.style.color = "";
+    }, 2200);
+  };
+
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(promptText).then(feedbackExit).catch(() => {
+      fallbackCopiarPortapapers(promptText, feedbackExit, feedbackError);
+    });
+  } else {
+    fallbackCopiarPortapapers(promptText, feedbackExit, feedbackError);
+  }
+}
+
+function fallbackCopiarPortapapers(text, onExit, onError) {
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-999999px";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand('copy');
+    ta.remove();
+    if (ok) onExit();
+    else onError();
+  } catch (err) {
+    onError();
+  }
 }
 
 function generarEstructuraJSON() {
@@ -706,6 +831,9 @@ function descarregarJson() {
 function importarJson(event) {
   const file = event.target.files[0];
   if (!file) return;
+
+  const btn = document.getElementById("ui_btn_import");
+  const textOriginal = UI_LANGS[currentLang].btnImport;
 
   const reader = new FileReader();
   reader.onload = function(e) {
@@ -793,10 +921,25 @@ function importarJson(event) {
         pre.textContent = JSON.stringify(generarEstructuraJSON(), null, 2);
       }
 
-      alert("Fitxer JSON importat correctament!");
+      btn.textContent = "✓ Fitxer carregat!";
+      btn.style.borderColor = "var(--success)";
+      btn.style.color = "var(--success)";
+      setTimeout(() => {
+        btn.textContent = textOriginal;
+        btn.style.borderColor = "";
+        btn.style.color = "";
+      }, 2500);
+
     } catch (err) {
       console.error("Error en importar JSON:", err);
-      alert("Error al llegir l'arxiu JSON. Comprova que el fitxer sigui vàlid.");
+      btn.textContent = "⚠ Format JSON no vàlid";
+      btn.style.borderColor = "var(--error)";
+      btn.style.color = "var(--error)";
+      setTimeout(() => {
+        btn.textContent = textOriginal;
+        btn.style.borderColor = "";
+        btn.style.color = "";
+      }, 2500);
     } finally {
       event.target.value = "";
     }
