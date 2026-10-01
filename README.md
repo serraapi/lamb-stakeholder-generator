@@ -1,4 +1,4 @@
-# LAMB Stakeholder Generator
+# LAMB Client Generator
 
 Eina web estàtica dissenyada per a assignatures universitàries de **Gestió de Projectes**. Permet configurar, parametritzar i generar perfils d'assistents virtuals (*stakeholders* simulats) per entrenar l'alumnat en entrevistes d'extracció de requisits tècnics.
 
