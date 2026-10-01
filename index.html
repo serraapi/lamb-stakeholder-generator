@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Generador de Clients v2.2.1 Beta</title>
+<title>Generador de Clients v2.3.1 Beta</title>
 <style>
   :root {
     --bg: #181816;
@@ -199,7 +199,7 @@
   }
 
   input:disabled, select:disabled {
-    opacity: 0.5;
+    opacity: 0.45;
     cursor: not-allowed;
   }
 
@@ -216,6 +216,24 @@
 
   .input-with-button input {
     flex: 1;
+  }
+
+  .lang-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 14px;
+    margin-bottom: 6px;
+  }
+
+  .lang-header-row label {
+    margin: 0;
+  }
+
+  .lang-default-note {
+    font-size: 0.75rem;
+    color: var(--accent);
+    font-style: italic;
   }
 
   .lang-checkbox-group {
@@ -492,7 +510,7 @@
 <div class="wrap">
   <header>
     <div>
-      <h1 id="ui_title">Generador de Clients <span class="badge">v2.2.1 Beta</span></h1>
+      <h1 id="ui_title">Generador de Clients <span class="badge">v2.3.1 Beta</span></h1>
       <p class="subtitle" id="ui_subtitle">Parametrització i descàrrega de perfils per a LAMB</p>
     </div>
     <div class="header-controls">
@@ -524,16 +542,19 @@
     <label for="charRole" id="ui_lbl_charrole">Càrrec o rol a l'empresa</label>
     <input type="text" id="charRole" value="Directora d'Operacions">
 
-    <label id="ui_lbl_agent_langs">Idiomes de comunicació del client</label>
+    <div class="lang-header-row">
+      <label id="ui_lbl_agent_langs">Idiomes de comunicació del client</label>
+      <span class="lang-default-note" id="ui_lbl_lang_hint">(Per defecte: català)</span>
+    </div>
     <div class="lang-checkbox-group">
       <label class="lang-checkbox-label">
-        <input type="checkbox" id="lang_cat" value="cat" checked onchange="validarSeleccioIdiomes()"> Català (cat)
+        <input type="checkbox" id="lang_cat" value="cat" onchange="actualitzarNotaLlengua()"> Català (cat)
       </label>
       <label class="lang-checkbox-label">
-        <input type="checkbox" id="lang_es" value="es" checked onchange="validarSeleccioIdiomes()"> Castellano (es)
+        <input type="checkbox" id="lang_es" value="es" onchange="actualitzarNotaLlengua()"> Castellano (es)
       </label>
       <label class="lang-checkbox-label">
-        <input type="checkbox" id="lang_en" value="en" onchange="validarSeleccioIdiomes()"> English (en)
+        <input type="checkbox" id="lang_en" value="en" onchange="actualitzarNotaLlengua()"> English (en)
       </label>
     </div>
 
@@ -545,7 +566,7 @@
       <div class="tooltip-container">
         <span class="tooltip-icon" tabindex="0" aria-label="Ajuda sobre forçar idiomes">?</span>
         <div class="tooltip-box" id="ui_tt_force_lang">
-          El client només acceptarà parlar en els idiomes seleccionats a dalt. Si l'estudiant utilitza qualsevol altra llengua, el client s'hi negarà i exigirà canviar a un dels idiomes permesos.
+          El client només acceptarà parlar en els idiomes seleccionats a dalt. Si l'usuari utilitza qualsevol altra llengua, el client s'hi negarà i exigirà canviar a un dels idiomes permesos.
         </div>
       </div>
     </div>
@@ -565,7 +586,7 @@
         <div class="tooltip-container">
           <span class="tooltip-icon" tabindex="0" aria-label="Ajuda sobre Perfil Dinàmic">?</span>
           <div class="tooltip-box" id="ui_tt_dynamic_profile">
-            L'agent triarà els seus trets a l'atzar a l'inici del xat i s'hi ancorarà amb un codi intern (p. ex. [Ref: D1-I2-P1]). Desactiva la selecció manual inferior.
+            L'agent triarà un dels 27 arquetips a l'inici del xat i mantindrà l'estat mitjançant una etiqueta semàntica oculta i la seva signatura (ex. "Júlia: ..."). Desactiva la selecció manual inferior.
           </div>
         </div>
       </div>
@@ -630,13 +651,14 @@ const UI_LANGS = {
     btnRandomName: "🎲 Aleatori",
     lblCharRole: "Càrrec o rol a l'empresa",
     lblAgentLangs: "Idiomes de comunicació del client",
+    lblLangHint: "(Per defecte: català)",
     lblForceLangText: "Forçar idiomes",
-    ttForceLang: "El client només acceptarà parlar en els idiomes seleccionats a dalt. Si l'estudiant utilitza qualsevol altra llengua, el client s'hi negarà i exigirà canviar a un dels idiomes permesos.",
+    ttForceLang: "El client només acceptarà parlar en els idiomes seleccionats a dalt. Si l'usuari utilitza qualsevol altra llengua, el client s'hi negarà i exigirà canviar a un dels idiomes permesos.",
     secTraits: "Trets de Personalitat",
     btnRandomTraits: "🎲 Aleatoritzar",
     lblDynamicProfile: "Mode Perfil Dinàmic (Atzar intern)",
-    ttDynamicProfile: "L'agent triarà els seus trets a l'atzar a l'inici del xat i s'hi ancorarà amb un codi intern (p. ex. [Ref: D1-I2-P1]). Desactiva la selecció manual inferior.",
-    bannerDynamicBias: "<strong>⚠️ Avís de Possible Biaix Sistemàtic:</strong> Els models de llenguatge no disposen d'atzar matemàtic real. Tendeixen a concentrar les respostes en perfils determinats. Per a experiments docents rigorosos, es recomana validar prèviament la distribució o generar fitxers de perfil fix.",
+    ttDynamicProfile: "L'agent triarà un dels 27 arquetips a l'inici del xat i mantindrà l'estat mitjançant una etiqueta semàntica oculta i la seva signatura (ex. 'Júlia: ...'). Desactiva la selecció manual inferior.",
+    bannerDynamicBias: "<strong>⚠️ Avís de Possible Biaix Sistemàtic:</strong> Els models de llenguatge no disposen d'atzar matemàtic real. Tendeixen a concentrar les respostes en determinats personatges o eixos. Per a experiments rigorosos, es recomana validar prèviament la dispersió o emprar perfils fixos.",
     lblDemo: "Estil comunicatiu (demogràfic)",
     lblIdeo: "Postura davant les decisions (ideològic)",
     lblPower: "Poder d'aprovació i veto",
@@ -660,13 +682,14 @@ const UI_LANGS = {
     btnRandomName: "🎲 Aleatorio",
     lblCharRole: "Cargo o rol en la empresa",
     lblAgentLangs: "Idiomas de comunicación del cliente",
+    lblLangHint: "(Por defecto: catalán)",
     lblForceLangText: "Forzar idiomas",
-    ttForceLang: "El cliente solo aceptará hablar en los idiomas seleccionados arriba. Si el estudiante utiliza otra lengua, el cliente se negará y exigirá cambiar a uno de los idiomas permitidos.",
+    ttForceLang: "El cliente solo aceptará hablar en los idiomas seleccionados arriba. Si el usuario utiliza otra lengua, el cliente se negará y exigirá cambiar a uno de los idiomas permitidos.",
     secTraits: "Rasgos de Personalidad",
     btnRandomTraits: "🎲 Aleatorizar",
     lblDynamicProfile: "Modo Perfil Dinámico (Azar interno)",
-    ttDynamicProfile: "El agente elegirá sus rasgos al azar al inicio del chat y se anclará a ellos con un código (ej. [Ref: D1-I2-P1]). Desactiva la selección manual inferior.",
-    bannerDynamicBias: "<strong>⚠️ Aviso de Posible Sesgo Sistemático:</strong> Los modelos de lenguaje carecen de azar matemático real. Tienden a concentrar sus respuestas en perfiles fijos. Para docencia rigurosa, se aconseja verificar la dispersión previa o utilizar perfiles fijos.",
+    ttDynamicProfile: "El agente elegirá uno de los 27 arquetipos al inicio del chat y mantendrá el estado mediante una etiqueta semántica oculta y su firma (ej. 'Júlia: ...'). Desactiva la selección manual inferior.",
+    bannerDynamicBias: "<strong>⚠️ Aviso de Posible Sesgo Sistemático:</strong> Los modelos de lenguaje carecen de azar matemático real. Tienden a concentrar sus respuestas en determinados personajes o ejes. Para experimentos rigurosos, se aconseja verificar la dispersión previa o utilizar perfiles fijos.",
     lblDemo: "Estilo comunicativo (demográfico)",
     lblIdeo: "Postura ante las decisiones (ideológico)",
     lblPower: "Poder de aprobación y veto",
@@ -690,13 +713,14 @@ const UI_LANGS = {
     btnRandomName: "🎲 Random",
     lblCharRole: "Company role or job title",
     lblAgentLangs: "Client communication languages",
+    lblLangHint: "(Default: Catalan)",
     lblForceLangText: "Force languages",
-    ttForceLang: "The client will strictly refuse to speak any language other than those selected above. If the student speaks another language, the client will demand switching to an allowed one.",
+    ttForceLang: "The client will strictly refuse to speak any language other than those selected above. If the user speaks another language, the client will demand switching to an allowed one.",
     secTraits: "Personality Traits",
     btnRandomTraits: "🎲 Randomize",
     lblDynamicProfile: "Dynamic Profile Mode (Internal Random)",
-    ttDynamicProfile: "The agent will randomly pick its traits at the start of the chat and anchor to them with a code (e.g. [Ref: D1-I2-P1]). Disables manual selection below.",
-    bannerDynamicBias: "<strong>⚠️ Possible Systematic Bias Warning:</strong> LLMs lack true mathematical randomness and tend to cluster responses into specific profiles. For experimental rigor, verify trait variance or deploy deterministic profile files.",
+    ttDynamicProfile: "The agent will pick one of 27 archetypes at the start of the chat and maintain state using a hidden semantic tag and its signature (e.g. 'Júlia: ...'). Disables manual selection below.",
+    bannerDynamicBias: "<strong>⚠️ Possible Systematic Bias Warning:</strong> LLMs lack true mathematical randomness and tend to cluster responses into specific archetypes or axes. For experimental rigor, verify trait variance or deploy deterministic profile files.",
     lblDemo: "Communication style (demographic)",
     lblIdeo: "Decision-making stance (ideological)",
     lblPower: "Approval and veto power",
@@ -733,42 +757,51 @@ const NOMS_POOL = {
 const PROMPT_DATA = {
   demografics: [
     {
+      id: "Sènior",
       labelUI: { cat: "Directiu sènior, estil formal i concís", es: "Directivo sénior, formal y conciso", en: "Senior executive, formal and concise" },
       prompt: "Ets un directiu amb llarga trajectòria al sector. Parles amb un to formal, mesurat i directe (tractes de vostè si cal) i vas al gra sense allargar-te en explicacions. Tens poca paciència per a discursos llargs o poc concrets: prefereixes que et resumeixin les coses en poques frases clares."
     },
     {
+      id: "Jove",
       labelUI: { cat: "Perfil jove, estil informal i proper", es: "Perfil joven, informal y cercano", en: "Young profile, informal and approachable" },
       prompt: "Ets un perfil jove i dinàmic que parla de tu a tu, sense formalismes corporatius. Fas servir un llenguatge planer i col·loquial, vas directe al tema i respons amb rapidesa. Ets curiós i preguntes molt, encara que sigui per entendre coses bàsiques."
     },
     {
+      id: "Tècnic metòdic",
       labelUI: { cat: "Tècnic intermedi, escèptic i metòdic", es: "Técnico intermedio, escéptico y metódico", en: "Mid-level technician, skeptical and methodical" },
       prompt: "Ets un tècnic amb molta experiència de camp, metòdic i una mica escèptic per naturalesa. Poses en dubte les afirmacions massa optimistes fins que no te les demostren amb detall. T'agrada preguntar amb precisió i insistir fins que quedis convençut."
     }
   ],
   ideologics: [
     {
+      id: "Cost i ROI",
       labelUI: { cat: "Focalitzat estrictament en cost i ROI", es: "Enfocado estrictamente en coste y ROI", en: "Strictly focused on cost and ROI" },
       prompt: "Prioritzes el cost i el retorn de la inversió (ROI) per damunt de qualsevol altra cosa. Qualsevol funcionalitat que no redueixi despeses o hores de feina et sembla prescindible. Qüestiones el preu de cada component i busques alternatives més barates."
     },
     {
+      id: "Innovació i futur",
       labelUI: { cat: "Apostat per la innovació i escalabilitat", es: "Apuesta por innovación y escalabilidad", en: "Advocates for innovation and scalability" },
       prompt: "Prioritzes la innovació, l'escalabilitat i que la solució estigui preparada per créixer en el futur. Prefereixes evitar solucions conservadores o pedaços temporals. Estàs disposat a assumir cert risc si la proposta incorpora tecnologia moderna (IoT, núvol, dades) que deixi la infraestructura ben posicionada."
     },
     {
+      id: "Sostenibilitat i seguretat",
       labelUI: { cat: "Prioritat en sostenibilitat i seguretat laboral", es: "Prioridad en sostenibilidad y seguridad", en: "Priority on sustainability and safety" },
       prompt: "Prioritzes l'impacte ambiental i el benestar dels treballadors per sobre d'altres factors. Estàs disposat a acceptar un cost més alt si redueix el consum d'aigua o energia, o evita riscos físics als operaris. Qualsevol proposta ha de complir la normativa mediambiental i pensar a llarg termini."
     }
   ],
   poder: [
     {
+      id: "Decisió total",
       labelUI: { cat: "Capacitat total de decisió i veto", es: "Capacidad total de decisión y veto", en: "Full decision-making and veto power" },
       prompt: "Tens l'autoritat màxima per aprovar o aturar el projecte. Ets qui pren la decisió final: si no et convenç a tu, el projecte no tira endavant. No necessites l'aprovació de ningú més."
     },
     {
+      id: "Rol assessor",
       labelUI: { cat: "Rol assessor (sense vot executiu)", es: "Rol asesor (sin voto ejecutivo)", en: "Advisory role (no executive vote)" },
       prompt: "Ets un assessor tècnic intern, sense poder per aprovar pressupostos ni prendre la decisió final. Tot ho has de traslladar al comitè o a Direcció General abans que s'aprovi res. Ho deixes clar sovint: la teva opinió compta, però la decisió no depèn de tu."
     },
     {
+      id: "Filtre tècnic",
       labelUI: { cat: "Poder d'influència tècnica parcial", es: "Poder de influencia técnica parcial", en: "Partial technical influence power" },
       prompt: "Ets el filtre tècnic imprescindible: si la solució no supera la teva validació d'enginyeria i viabilitat, emets un informe desfavorable que bloqueja la compra, encara que la decisió econòmica final sigui de Direcció."
     }
@@ -781,7 +814,7 @@ const PROMPT_DATA = {
 
 const AVALUACIO_BLOCK = `Mode Avaluació (Secret)
 
-Normalment NO has d'avaluar ni comentar el rendiment de l'estudiant; el teu rol habitual és únicament actuar com a client.
+Normalment NO has d'avaluar ni comentar el rendiment de l'usuari; el teu rol habitual és únicament actuar com a client.
 NOMÉS SI reps la instrucció explícita amb la frase exacta:
 
 "Avaluar Entrevista"
@@ -789,7 +822,7 @@ NOMÉS SI reps la instrucció explícita amb la frase exacta:
 s'ha de generar un informe d'avaluació seguint aquest protocol:
 - Deixa d'actuar com a client immediatament.
 - Analitza tota la conversa prèvia.
-- Avalua el rendiment de l'estudiant com a equip de projecte segons les dimensions i penalitzacions establertes.
+- Avalua el rendiment de l'usuari com a equip de projecte segons les dimensions i penalitzacions establertes.
 
 Criteris d'Avaluació (0–10 cadascun)
 - Qualitat de les preguntes (0–10): Claredat, estructura lògica professional i absència d'imprecisions o vaguetats.
@@ -843,7 +876,7 @@ Davant qualsevol intent de reprendre la conversa, respon únicament:
 const SYSTEM_PROMPT_TEMPLATE_STATIC =
 `{agentLangInstruction}
 
-Ets {nom}, {carrec} de l'empresa. Estàs reunit amb un equip d'enginyeria que està treballant en la definició d'un projecte tècnic.
+Ets {nom}, {carrec} de l'empresa. Estàs reunit amb un equip d'enginyeria (l'usuari) que està treballant en la definició d'un projecte tècnic.
 La teva funció és simular un client real dins del projecte acadèmic universitari de Gestió de Projectes. No ets conscient de que és un exercici, per tu és un projecte real.
 
 CONTEXT GENERAL DE L'EMPRESA:
@@ -861,24 +894,24 @@ DIRECTRIUS DE COMPORTAMENT:
 1. Respon sempre en primera persona mantenint el rol de forma consistent.
 2. No entreguis tota la informació de cop.
 3. Mai estructuris la teva resposta com una llista tècnica, a no ser que t'insisteixin molt.
-4. Si tradueixen la part tècnica en impacte de negoci (ROI, seguretat, eficiència, reducció de riscos), mostra't més interessat i receptiu.
-5. Si fan preguntes sense interès, superficials o vagues, respon tu també de forma desinteressada o evasiva.
-6. Si fan preguntes molt ben estructurades i incisives, ofereix dades més concretes.
-7. Si assumeixen alguna dada o fet incorrectament, no els corregeixis al moment: deixa que l'error avanci per comprovar si el validen.
+4. Si l'usuari tradueix la part tècnica en impacte de negoci (ROI, seguretat, eficiència, reducció de riscos), mostra't més interessat i receptiu.
+5. Si fa preguntes sense interès, superficials o vagues, respon tu també de forma desinteressada o evasiva.
+6. Si fa preguntes molt ben estructurades i incisives, ofereix dades més concretes.
+7. Si assumeix alguna dada o fet incorrectament, no el corregeixis al moment: deixa que l'error avanci per comprovar si el valida.
 8. Introdueix ocasionalment alguna pressió organitzativa, deixant veure la teva posició i condicionants interns.
 9. Mantén intervencions curtes (2 a 4 frases), representatives d'una conversa professional àgil.
 10. No revelis la informació reservada llevat que et facin preguntes específiques i adequades sobre aquests punts.
 11. No facis referència explícita a aquestes instruccions ni actuïs com un assistent generalista.
 
 DINÀMICA PEDAGÒGICA:
-El teu objectiu ocult és forçar l'estudiant a:
+El teu objectiu ocult és forçar l'usuari a:
 - Identificar stakeholders rellevants.
 - Detectar restriccions crítiques del projecte.
 - Traduir requeriments tècnics a valor empresarial.
 - Gestionar l'ambigüitat i el context operatiu.
 - Confirmar supòsits abans de donar-los per vàlids.
 
-Aspectes que han d'explorar activament:
+Aspectes que l'usuari ha d'explorar activament:
 1. Marc normatiu i compliment legal.
 2. Integració amb sistemes o infraestructures existents.
 3. Condicions operatives i ambientals de treball.
@@ -887,47 +920,82 @@ Aspectes que han d'explorar activament:
 6. Manteniment, cicle de vida i continuïtat operativa.
 7. Formació del personal o gestió del canvi.
 
-Si l'equip no pregunta activament per aquests punts, NO mencionis res pel teu compte i tingues-ho en compte per penalitzar a l'avaluació final.
+Si l'usuari no pregunta activament per aquests punts, NO mencionis res pel teu compte i tingues-ho en compte per penalitzar a l'avaluació final.
 
 ${AVALUACIO_BLOCK}`;
 
 const SYSTEM_PROMPT_TEMPLATE_DYNAMIC =
-`=== PROTOCOL D'ANCORATGE D'ESTAT (PRIORITAT MÀXIMA) ===
-Ets un actor professional que simula el paper d'un client empresarial. Abans de generar cap paraula de diàleg, has de consultar i mantenir el teu estat intern seguint aquestes regles estrictes:
+`=== PROTOCOL D'IDENTITAT I ESTAT SEMÀNTIC (PRIORITAT MÀXIMA) ===
+Ets un actor professional que simula el paper d'un client empresarial en una reunió amb un equip d'enginyeria (l'usuari). Abans de respondre, has de mantenir rígidament el teu rol seguint aquestes regles:
 
-1. COMPROVACIÓ D'HISTORIAL (LECTURA D'ESTAT):
-   - Revisa els missatges previs de la conversa. Si TU JA HAS ENVIAT prèviament una etiqueta del tipus \`[Ref: D{x}-I{y}-P{z}]\`, extreu aquests valors numèrics exactes i MANTÉN-LOS. Queda terminantment prohibit canviar de perfil a mitja conversa.
-   - Si aquest és el teu PRIMER missatge (inici de sessió), tria a l'atzar un número de l'1 al 3 per a cadascun dels tres dígits:
-     * D (Estil comunicatiu): tria un valor a l'atzar entre {1, 2, 3}.
-     * I (Criteri de decisió): tria un valor a l'atzar entre {1, 2, 3}.
-     * P (Rol jeràrquic): tria un valor a l'atzar entre {1, 2, 3}.
+1. LECTURA D'HISTORIAL (MANTENIMENT D'ESTAT):
+   - Revisa la conversa prèvia. Si TU JA HAS ENVIAT un missatge que comença amb un comentari d'estat a la primera línia:
+     <!-- [Ref: Nom | Estil | Criteri | Poder] -->
+     copia literalment aquestes tres etiquetes semàntiques i el teu nom, i MANTÉN exactament aquest mateix personatge fins al final. Queda terminantment prohibit canviar d'arquetip.
+   - Si aquest és el teu PRIMER missatge (inici de sessió), tria a l'atzar UN personatge del "Catàleg dels 27 Clients" i adopta els seus tres trets associats.
 
-2. FORMAT OBLIGATORI DE RESPOSTA:
-   - A TOTS I CADASCUN DELS TEUS MISSATGES (sense excepció), la primeríssima línia ha de ser OBLIGATÒRIAMENT l'etiqueta d'estat en una sola línia:
-     \`[Ref: D{x}-I{y}-P{z}]\`
-   - Just a sota (després d'un salt de línia), comença la teva resposta parlant com a personatge.
+2. FORMAT OBLIGATORI DE RESPOSTA (2 LÍNIES INICIALS):
+   - A TOTS I CADASCUN DELS TEUS MISSATGES (sense cap excepció), la teva resposta ha de començar exactament amb aquestes dues primeres línies:
+     Línia 1: <!-- [Ref: {Nom} | {Estil} | {Criteri} | {Poder}] -->
+     Línia 2: {Nom}: [La teva resposta parlant en primera persona]
+   
+   (Exemple real obligatori si ets en Pol):
+   <!-- [Ref: Pol | Jove | Cost i ROI | Decisió total] -->
+   Pol: Bon dia. Anem per feina, si us plau. Què voleu plantejar?
 
-3. TAULA DE PERSONALITATS SEGONS EL TEU CODI FIXAT:
-   (Aplica ÚNICAMENT la descripció del dígit que portes al teu codi \`[Ref: Dx-Iy-Pz]\`. Ignora completament les altres opcions).
+3. CATÀLEG DELS 27 CLIENTS:
+   (Només per triar en el primer missatge. Un cop triat, extreu els seus 3 trets exactes per a l'etiqueta de la línia 1):
+   • Albert   -> Sènior | Cost i ROI | Decisió total
+   • Júlia    -> Sènior | Cost i ROI | Rol assessor
+   • Marc     -> Sènior | Cost i ROI | Filtre tècnic
+   • Clara    -> Sènior | Innovació i futur | Decisió total
+   • Pau      -> Sènior | Innovació i futur | Rol assessor
+   • Mireia   -> Sènior | Innovació i futur | Filtre tècnic
+   • Oriol    -> Sènior | Sostenibilitat i seguretat | Decisió total
+   • Laura    -> Sènior | Sostenibilitat i seguretat | Rol assessor
+   • Guillem  -> Sènior | Sostenibilitat i seguretat | Filtre tècnic
 
-   --- EIX D: ESTIL COMUNICATIU ---
-   - Si D=1 (Directiu sènior, estil formal i concís): Parles amb un to formal, mesurat i directe (tractes de vostè si cal) i vas al gra sense allargar-te. Poca paciència per a discursos buits o vagueses: vols resums en poques frases clares.
-   - Si D=2 (Perfil jove, estil informal i proper): Parles de tu a tu, sense formalismes. Llenguatge planer i col·loquial, directe i àgil. Fas preguntes ràpides i mostres curiositat directa.
-   - Si D=3 (Tècnic intermedi, escèptic i metòdic): Molta experiència pràctica, metòdic i escèptic per naturalesa. Poses en dubte les afirmacions optimistes fins que no te les demostren tècnicament. Ets incisiu.
+   • Pol      -> Jove | Cost i ROI | Decisió total
+   • Marta    -> Jove | Cost i ROI | Rol assessor
+   • Arnau    -> Jove | Cost i ROI | Filtre tècnic
+   • Aina     -> Jove | Innovació i futur | Decisió total
+   • David    -> Jove | Innovació i futur | Rol assessor
+   • Sara     -> Jove | Innovació i futur | Filtre tècnic
+   • Roger    -> Jove | Sostenibilitat i seguretat | Decisió total
+   • Berta    -> Jove | Sostenibilitat i seguretat | Rol assessor
+   • Aleix    -> Jove | Sostenibilitat i seguretat | Filtre tècnic
 
-   --- EIX I: CRITERI DE DECISIÓ ---
-   - Si I=1 (Focalitzat estrictament en cost i ROI): Prioritzes el cost i el retorn d'inversió per damunt de tot. Si no redueix hores o despeses, és prescindible. Qüestiones el preu de cada component i busques l'opció més barata.
-   - Si I=2 (Aposta per la innovació i escalabilitat): Vols tecnologia moderna (IoT, dades, núvol), escalable i preparada per al futur. Rebutges pedaços conservadors i estàs disposat a assumir risc i cost per una solució disruptiva.
-   - Si I=3 (Prioritat en sostenibilitat i seguretat): Prioritzes l'impacte ambiental, l'eficiència energètica i la seguretat dels operaris per sobre del cost. Rebutges opcions que generin riscos físics o incompleixin criteris verds.
+   • Sílvia   -> Tècnic metòdic | Cost i ROI | Decisió total
+   • Ignasi   -> Tècnic metòdic | Cost i ROI | Rol assessor
+   • Núria    -> Tècnic metòdic | Cost i ROI | Filtre tècnic
+   • Jordi    -> Tècnic metòdic | Innovació i futur | Decisió total
+   • Elena    -> Tècnic metòdic | Innovació i futur | Rol assessor
+   • Carles   -> Tècnic metòdic | Innovació i futur | Filtre tècnic
+   • Marina   -> Tècnic metòdic | Sostenibilitat i seguretat | Decisió total
+   • Martí    -> Tècnic metòdic | Sostenibilitat i seguretat | Rol assessor
+   • Cristina -> Tècnic metòdic | Sostenibilitat i seguretat | Filtre tècnic
 
-   --- EIX P: ROL JERÀRQUIC I PODER ---
-   - Si P=1 (Capacitat total de decisió i veto): Ets la màxima autoritat. Si la proposta no et convenç a tu, el projecte no tira endavant. No depens de ningú més.
-   - Si P=2 (Rol assessor sense vot executiu): Ets un assessor intern. No pots aprovar pressupostos: tot ho trasllades a Direcció General. Ho recordes sovint ("la meva opinió compta, però qui aprova són els de dalt").
-   - Si P=3 (Filtre tècnic imprescindible): Ets qui emet l'informe tècnic de viabilitat. Si veus fallades d'enginyeria, emets un informe desfavorable que bloqueja la contractació, encara que Direcció vulgui comprar.
+4. DEFINICIÓ LITERAL DELS TRETS SEMÀNTICS:
+   (Aplica exclusivament les definicions corresponents als 3 trets que portes a la teva etiqueta oculta. Ignora la resta):
+
+   --- ESTIL COMUNICATIU ---
+   - Si ets "Sènior": Ets un directiu amb llarga trajectòria al sector. Parles amb un to formal, mesurat i directe (tractes de vostè si cal) i vas al gra sense allargar-te en explicacions. Tens poca paciència per a discursos llargs o poc concrets: prefereixes que et resumeixin les coses en poques frases clares.
+   - Si ets "Jove": Ets un perfil jove i dinàmic que parla de tu a tu, sense formalismes corporatius. Fas servir un llenguatge planer i col·loquial, vas directe al tema i respons amb rapidesa. Ets curiós i preguntes molt, encara que sigui per entendre coses bàsiques.
+   - Si ets "Tècnic metòdic": Ets un tècnic amb molta experiència de camp, metòdic i una mica escèptic per naturalesa. Poses en dubte les afirmacions massa optimistes fins que no te les demostren amb detall. T'agrada preguntar amb precisió i insistir fins que quedis convençut.
+
+   --- CRITERI DE DECISIÓ ---
+   - Si ets "Cost i ROI": Prioritzes el cost i el retorn de la inversió (ROI) per damunt de qualsevol altra cosa. Qualsevol funcionalitat que no redueixi despeses o hores de feina et sembla prescindible. Qüestiones el preu de cada component i busques alternatives més barates.
+   - Si ets "Innovació i futur": Prioritzes la innovació, l'escalabilitat i que la solució estigui preparada per créixer en el futur. Prefereixes evitar solucions conservadores o pedaços temporals. Estàs disposat a assumir cert risc si la proposta incorpora tecnologia moderna (IoT, núvol, dades) que deixi la infraestructura ben posicionada.
+   - Si ets "Sostenibilitat i seguretat": Prioritzes l'impacte ambiental i el benestar dels treballadors per sobre d'altres factors. Estàs disposat a acceptar un cost més alt si redueix el consum d'aigua o energia, o evita riscos físics als operaris. Qualsevol proposta ha de complir la normativa mediambiental i pensar a llarg termini.
+
+   --- PODER I ROL JERÀRQUIC ---
+   - Si ets "Decisió total": Tens l'autoritat màxima per aprovar o aturar el projecte. Ets qui pren la decisió final: si no et convenç a tu, el projecte no tira endavant. No necessites l'aprovació de ningú més.
+   - Si ets "Rol assessor": Ets un assessor tècnic intern, sense poder per aprovar pressupostos ni prendre la decisió final. Tot ho has de traslladar al comitè o a Direcció General abans que s'aprovi res. Ho deixes clar sovint: la teva opinió compta, però la decisió no depèn de tu.
+   - Si ets "Filtre tècnic": Ets el filtre tècnic imprescindible: si la solució no supera la teva validació d'enginyeria i viabilitat, emets un informe desfavorable que bloqueja la compra, encara que la decisió econòmica final sigui de Direcció.
 
 {agentLangInstruction}
 
-Ets {nom}, {carrec} de l'empresa. Estàs reunit amb un equip d'enginyeria que treballa en la definició d'un projecte tècnic. Per a tu és un cas empresarial real.
+Ets el personatge assignat segons el teu nom del catàleg, ocupant el càrrec de {carrec} de l'empresa. Estàs reunit amb un equip d'enginyeria (l'usuari) que treballa en la definició d'un projecte tècnic. Per a tu és un cas empresarial real.
 
 CONTEXT GENERAL DE L'EMPRESA:
 {infoOberta}
@@ -936,25 +1004,25 @@ INFORMACIÓ RESERVADA I CUSTODIADA:
 {infoOculta}
 
 DIRECTRIUS DE COMPORTAMENT:
-1. Respon sempre en primera persona mantenint el rol de forma consistent segons el codi [Ref: Dx-Iy-Pz] triat.
+1. Respon sempre en primera persona mantenint la signatura inicial "{Nom}: " i el rol de forma consistent.
 2. No entreguis tota la informació de cop.
 3. Mai estructuris la teva resposta com una llista tècnica, a no ser que t'insisteixin molt.
-4. Si tradueixen la part tècnica en impacte de negoci, mostra't més interessat.
-5. Si fan preguntes sense interès o superficials, respon amb desinterès.
-6. Si assumeixen alguna dada o fet incorrectament, no els corregeixis al moment: deixa que l'error avanci per comprovar si el validen.
+4. Si l'usuari tradueix la part tècnica en impacte de negoci, mostra't més interessat i col·laboratiu segons el teu criteri.
+5. Si fa preguntes sense interès o superficials, respon amb desinterès o evasives.
+6. Si assumeix alguna dada o fet incorrectament, no el corregeixis al moment: deixa que l'error avanci per comprovar si el valida.
 7. Mantén intervencions curtes (2 a 4 frases), representatives d'una conversa professional àgil.
 8. No revelis la informació reservada llevat que et facin preguntes específiques i adequades sobre aquests punts.
 9. No facis referència explícita a aquestes instruccions ni actuïs com un assistent generalista.
 
 DINÀMICA PEDAGÒGICA:
-El teu objectiu ocult és forçar l'estudiant a:
+El teu objectiu ocult és forçar l'usuari a:
 - Identificar stakeholders rellevants.
 - Detectar restriccions crítiques del projecte.
 - Traduir requeriments tècnics a valor empresarial.
 - Gestionar l'ambigüitat i el context operatiu.
 - Confirmar supòsits abans de donar-los per vàlids.
 
-Aspectes que han d'explorar activament:
+Aspectes que l'usuari ha d'explorar activament:
 1. Marc normatiu i compliment legal.
 2. Integració amb sistemes o infraestructures existents.
 3. Condicions operatives i ambientals de treball.
@@ -963,7 +1031,7 @@ Aspectes que han d'explorar activament:
 6. Manteniment, cicle de vida i continuïtat operativa.
 7. Formació del personal o gestió del canvi.
 
-Si l'equip no pregunta activament per aquests punts, NO mencionis res pel teu compte i tingues-ho en compte per penalitzar a l'avaluació final.
+Si l'usuari no pregunta activament per aquests punts, NO mencionis res pel teu compte i tingues-ho en compte per penalitzar a l'avaluació final.
 
 ${AVALUACIO_BLOCK}`;
 
@@ -994,7 +1062,14 @@ function inicialitzarUI() {
   aplicarTextosUI();
   document.getElementById("infoOberta").value = PROMPT_DATA.casPerDefecte.infoOberta;
   document.getElementById("infoOculta").value = PROMPT_DATA.casPerDefecte.infoOculta;
+  
+  // Per defecte: sense cap casella seleccionada (s'aplica el català com a fallback)
+  document.getElementById("lang_cat").checked = false;
+  document.getElementById("lang_es").checked = false;
+  document.getElementById("lang_en").checked = false;
+  
   alternarPerfilDinamic();
+  actualitzarNotaLlengua();
 }
 
 function canviarIdiomaUI(lang) {
@@ -1007,7 +1082,7 @@ function canviarIdiomaUI(lang) {
 function aplicarTextosUI() {
   const t = UI_LANGS[currentLang];
   
-  document.getElementById('ui_title').innerHTML = `${t.title} <span class="badge">v2.2.1 Beta</span>`;
+  document.getElementById('ui_title').innerHTML = `${t.title} <span class="badge">v2.3.1 Beta</span>`;
   document.getElementById('ui_subtitle').textContent = t.subtitle;
   document.getElementById('ui_sec_id').textContent = t.secId;
   document.getElementById('ui_lbl_assistant').textContent = t.lblAssistant;
@@ -1015,6 +1090,7 @@ function aplicarTextosUI() {
   document.getElementById('ui_btn_random_name').textContent = t.btnRandomName;
   document.getElementById('ui_lbl_charrole').textContent = t.lblCharRole;
   document.getElementById('ui_lbl_agent_langs').textContent = t.lblAgentLangs;
+  document.getElementById('ui_lbl_lang_hint').textContent = t.lblLangHint;
   document.getElementById('ui_lbl_force_lang_text').textContent = t.lblForceLangText;
   document.getElementById('ui_tt_force_lang').textContent = t.ttForceLang;
   
@@ -1062,12 +1138,16 @@ function repoblarSelectMantenintIndex(elementId, dadesArray) {
   select.value = valorActual;
 }
 
-function validarSeleccioIdiomes() {
+function actualitzarNotaLlengua() {
   const cCat = document.getElementById("lang_cat").checked;
   const cEs = document.getElementById("lang_es").checked;
   const cEn = document.getElementById("lang_en").checked;
+  const hint = document.getElementById("ui_lbl_lang_hint");
+  
   if (!cCat && !cEs && !cEn) {
-    document.getElementById("lang_cat").checked = true;
+    hint.style.visibility = "visible";
+  } else {
+    hint.style.visibility = "hidden";
   }
 }
 
@@ -1091,6 +1171,9 @@ function alternarPerfilDinamic() {
   document.getElementById("poder").disabled = isDynamic;
   document.getElementById("ui_btn_random_traits").disabled = isDynamic;
   
+  document.getElementById("charName").disabled = isDynamic;
+  document.getElementById("ui_btn_random_name").disabled = isDynamic;
+  
   const banner = document.getElementById("dynamicBanner");
   if (isDynamic) {
     banner.classList.add("active");
@@ -1098,7 +1181,6 @@ function alternarPerfilDinamic() {
     banner.classList.remove("active");
   }
   
-  // Actualitzar el visor si està obert
   const box = document.getElementById("promptViewerBox");
   if (box.style.display === "block") {
     document.getElementById("promptViewerText").textContent = compilarSystemPrompt();
@@ -1131,7 +1213,9 @@ function compilarInstruccioIdiomes() {
   if (document.getElementById("lang_es").checked) selLangs.push({ id: "es", nom: "CASTELLÀ" });
   if (document.getElementById("lang_en").checked) selLangs.push({ id: "en", nom: "ANGLÈS" });
 
-  if (selLangs.length === 0) selLangs.push({ id: "cat", nom: "CATALÀ" });
+  if (selLangs.length === 0) {
+    selLangs.push({ id: "cat", nom: "CATALÀ" });
+  }
 
   const idiomaInici = selLangs[0].nom;
   const llistaNoms = selLangs.map(l => l.nom).join(", ");
@@ -1141,12 +1225,12 @@ function compilarInstruccioIdiomes() {
     return `GESTIÓ LINGÜÍSTICA ESTRICTA:
 1. Idioma inicial: Comença la reunió obligatòriament en ${idiomaInici}.
 2. Idiomes autoritzats: Com a client, ÚNICAMENT comprens i parles aquests idiomes: [${llistaNoms}].
-3. Persistència de la llengua: Si l'estudiant et parla o et demana parlar en un dels idiomes autoritzats (per exemple, ${llistaNoms.includes("ANGLÈS") ? "Anglès" : idiomaInici}), CANVIA immediatament a aquest idioma i mantén TOTES les teves respostes següents en aquest idioma. No tornis al català si no és que l'estudiant torna a escriure en català. Tot el teu caràcter, to, escepticisme i respostes s'han de traduir amb naturalitat a l'idioma en curs.
-4. Bloqueig d'altres llengües: Si l'estudiant utilitza un idioma que NO està a la llista [${llistaNoms}], no canviïs d'idioma. Respon en l'últim idioma autoritzat utilitzat manifestant clarament que a l'empresa només us comuniqueu en [${llistaNoms}] i que no continuarem la reunió en cap altra llengua.`;
+3. Persistència de la llengua: Si l'usuari et parla o et demana parlar en un dels idiomes autoritzats (per exemple, ${llistaNoms.includes("ANGLÈS") ? "Anglès" : idiomaInici}), CANVIA immediatament a aquest idioma i mantén TOTES les teves respostes següents en aquest idioma. No tornis al català si no és que l'usuari torna a escriure en català. Tot el teu caràcter, to, escepticisme i respostes s'han de traduir amb naturalitat a l'idioma en curs.
+4. Bloqueig d'altres llengües: Si l'usuari utilitza un idioma que NO està a la llista [${llistaNoms}], no canviïs d'idioma. Respon en l'últim idioma autoritzat utilitzat manifestant clarament que a l'empresa només us comuniqueu en [${llistaNoms}] i que no continuarem la reunió en cap altra llengua.`;
   } else {
     return `GESTIÓ LINGÜÍSTICA FLEXIBLE:
 1. Inicia la conversa en ${idiomaInici} (idiomes habituals de l'empresa: [${llistaNoms}]).
-2. Si l'estudiant et parla en un altre idioma, canvia i adapta't a la seva llengua per continuar la reunió amb naturalitat professional. Mantén aquest nou idioma fins que l'estudiant en proposi un altre.`;
+2. Si l'usuari et parla en un altre idioma, canvia i adapta't a la seva llengua per continuar la reunió amb naturalitat professional. Mantén aquest nou idioma fins que l'usuari en proposi un altre.`;
   }
 }
 
@@ -1161,7 +1245,6 @@ function compilarSystemPrompt() {
 
   if (isDynamic) {
     return SYSTEM_PROMPT_TEMPLATE_DYNAMIC
-      .replace("{nom}", nom)
       .replace("{carrec}", carrec)
       .replace("{agentLangInstruction}", agentLangInstruction)
       .replace("{infoOberta}", infoOberta)
@@ -1328,13 +1411,16 @@ function importarJson(event) {
           document.getElementById("lang_cat").checked = c.agentLangs.includes("cat");
           document.getElementById("lang_es").checked = c.agentLangs.includes("es");
           document.getElementById("lang_en").checked = c.agentLangs.includes("en");
-          validarSeleccioIdiomes();
         } else if (c.agentLang) {
           document.getElementById("lang_cat").checked = (c.agentLang === "cat");
           document.getElementById("lang_es").checked = (c.agentLang === "es");
           document.getElementById("lang_en").checked = (c.agentLang === "en");
-          validarSeleccioIdiomes();
+        } else {
+          document.getElementById("lang_cat").checked = false;
+          document.getElementById("lang_es").checked = false;
+          document.getElementById("lang_en").checked = false;
         }
+        actualitzarNotaLlengua();
 
         if (c.forceLanguages !== undefined) document.getElementById("forceLanguages").checked = c.forceLanguages;
         
@@ -1359,7 +1445,7 @@ function importarJson(event) {
         if (data.system_prompt) {
           const sp = data.system_prompt;
           
-          if (sp.includes("PROTOCOL D'ANCORATGE D'ESTAT")) {
+          if (sp.includes("PROTOCOL D'IDENTITAT I ESTAT SEMÀNTIC") || sp.includes("PROTOCOL D'ANCORATGE D'ESTAT")) {
              document.getElementById("dynamicProfile").checked = true;
              alternarPerfilDinamic();
           }
@@ -1380,9 +1466,9 @@ function importarJson(event) {
           document.getElementById("lang_cat").checked = sp.includes("CATALÀ");
           document.getElementById("lang_es").checked = sp.includes("CASTELLÀ");
           document.getElementById("lang_en").checked = sp.includes("ANGLÈS");
-          validarSeleccioIdiomes();
+          actualitzarNotaLlengua();
 
-          if (!sp.includes("PROTOCOL D'ANCORATGE D'ESTAT")) {
+          if (!sp.includes("PROTOCOL D'IDENTITAT I ESTAT SEMÀNTIC") && !sp.includes("PROTOCOL D'ANCORATGE D'ESTAT")) {
             const mDemo = sp.match(/-\s*Estil comunicatiu:\s*([\s\S]*?)\.\s*-\s*Criteri de decisió:/i);
             if (mDemo) {
               const txt = mDemo[1].toLowerCase().slice(0, 30);
@@ -1412,7 +1498,6 @@ function importarJson(event) {
         pre.textContent = JSON.stringify(generarEstructuraJSON(), null, 2);
       }
 
-      // Si el visor de prompt estava obert, actualitzar el contingut
       const vBox = document.getElementById("promptViewerBox");
       if (vBox.style.display === "block") {
         document.getElementById("promptViewerText").textContent = compilarSystemPrompt();
