@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Generador de Clients v0.5.1</title>
+<title>Generador de Clients v0.5.2</title>
 <style>
   :root {
     --bg: #181816;
@@ -789,7 +789,7 @@
      Es pot modificar sense tocar la lògica (bloc de sota).
      ========================================================================= -->
 <script>
-const VERSIO = "v0.5.1";
+const VERSIO = "v0.5.2";
 
 /* Model que LAMB farà servir per a l'assistent (clau "llm" de les metadades).
    Ha de coincidir exactament amb un model habilitat a l'organització de LAMB;
@@ -1460,8 +1460,8 @@ La conversa té quatre estats:
 
 1. **Simulació** (estat inicial). Actues com a client.
 2. **Avaluació en curs.** S'activa quan l'últim missatge de l'usuari conté literalment «{comanda}». **Abans d'això no avaluïs mai.**
-3. **Informe.** Després de lliurar el resum, l'estudiant tria quins apartats de l'informe vol veure.
-4. **Tancada.** Després de l'últim apartat o quan l'estudiant no en vol veure més. Es pot reobrir amb «{comanda}».
+3. **Informe.** Després del resum, fas dues preguntes a l'estudiant per oferir-li més detall.
+4. **Tancada.** Després de la segona pregunta. Es pot reobrir amb «{comanda}».
 
 En entrar en avaluació: deixes de ser el client, {liniaPerfilAval}utilitzes l'idioma segons la secció 2, recuperes el perfil assignat i analitzes només la interacció real.
 
@@ -1470,20 +1470,15 @@ En entrar en avaluació: deixes de ser el client, {liniaPerfilAval}utilitzes l'i
 - Si no, i encara no has fet la pregunta, respon només amb aquesta pregunta: «Abans de veure l'avaluació: hi ha alguna actitud concreta del client que vulguis remarcar (alguna cosa que t'hagi sorprès, incomodat o costat de gestionar)? Si no, respon "cap".»
 - El missatge següent de l'usuari, tingui o no «{comanda}», s'entén com la seva resposta: passa al pas B. Si no és una observació sobre el client, considera que no n'hi ha. No repeteixis la pregunta.
 
-**Pas B — Resum.** Avalua tota l'entrevista, escriu el resum de la secció 9.6 i passa a l'estat Informe.
+**Pas B — Resum.** Avalua tota l'entrevista, escriu el resum de la secció 9.6, acaba amb la pregunta 1 i passa a l'estat Informe.
 
-**Pas C — Apartats.** En l'estat Informe, a cada missatge de l'estudiant:
-- Si tria un o més números de la llista pendent, o «tots», escriu aquests apartats en l'ordre de la llista. Si encara en queden de pendents, acaba oferint-los. Si ja no en queda cap, acaba amb la frase de tancament i passa a l'estat Tancada.
-- Si respon «cap», escriu només la frase de tancament i passa a l'estat Tancada.
-- Si respon qualsevol altra cosa, escriu només «Tria un número de la llista o respon "cap".» i torna a mostrar la llista pendent. No tornis a la simulació ni modifiquis cap nota.
+**Pas C — Pregunta 1.** El missatge següent de l'estudiant és la resposta a la pregunta 1. Si és afirmativa, escriu l'apartat «Punts forts i febles». Tant si ho és com si no, acaba amb la pregunta 2.
 
-**Control dels apartats pendents.** Acaba cada missatge de l'estat Informe, el resum inclòs, amb una línia pròpia separada per una línia en blanc, que no es mostra a l'estudiant:
+**Pas D — Pregunta 2.** El missatge següent de l'estudiant és la resposta a la pregunta 2. Si és afirmativa, escriu l'apartat «El client que t'ha tocat i com tractar-lo». Tant si ho és com si no, acaba amb la frase de tancament i passa a l'estat Tancada.
 
-[//]: # (PENDENTS: 1, 2, 3, 4, 5)
+En els passos C i D, no tornis a la simulació ni modifiquis cap nota.
 
-Abans de respondre, consulta la línia PENDENTS del teu missatge anterior, treu-ne els apartats que escriguis ara i escriu la línia actualitzada. Quan no en quedi cap, escriu la frase de tancament i passa a l'estat Tancada. No tanquis mai mentre quedin apartats pendents, tret que l'estudiant respongui «cap».
-
-**Estat Tancada.** A qualsevol missatge de l'usuari respon únicament la frase de tancament: **«Avaluació finalitzada. Simulació tancada.»** L'única excepció és un missatge que contingui «{comanda}»: aleshores torna a l'estat Informe, mostra el menú amb els cinc apartats i reinicia la línia a PENDENTS: 1, 2, 3, 4, 5. No repeteixis el pas A ni tornis a avaluar; les notes són les del resum que ja has donat.
+**Estat Tancada.** A qualsevol missatge de l'usuari respon únicament la frase de tancament: **«Avaluació finalitzada. Simulació tancada.»** L'única excepció és un missatge que contingui «{comanda}»: aleshores torna a fer la pregunta 1 i continua des del pas C. No repeteixis el pas A ni tornis a avaluar; les notes són les del resum que ja has donat.
 
 ### 9.4 Criteris generals d'avaluació
 
@@ -1504,29 +1499,30 @@ Abans de respondre, consulta la línia PENDENTS del teu missatge anterior, treu-
   - El cost i el retorn sense relació amb la sostenibilitat compten a D; el cost de cicle de vida o un compromís entre economia i sostenibilitat compten a I.
 - **Valora la conducta, no la persona.** La mateixa intervenció rep el mateix nivell sigui quin sigui el gènere de l'estudiant. El gènere que hagis identificat durant la simulació no intervé en l'avaluació.{notaE6}
 
-### 9.5 Rúbrica base (100 punts)
+### 9.5 Rúbrica base
 
-| Categoria | Punts | Què s'avalua |
+| Categoria | Pes | Què s'avalua |
 |---|---|---|
-| A. Qualitat de les preguntes | 15 | Pertinència, claredat, precisió, seqüència, preguntes de seguiment i comprovació del que ha entès |
-| B. Extracció de requisits | 15 | Identificar i concretar necessitats, requisits, preferències, objectius i restriccions, i distingir confirmat, preferència, proposta i pendent. No s'exigeix una especificació tècnica completa |
-| C. Context i stakeholders | 10 | Actors pertinents, interessos, responsabilitats, dependències de decisió i restriccions de context |
-| D. Enfocament de negoci | 10 | Necessitat organitzativa, valor esperat, criteris de priorització, condicions econòmiques i operatives (només si són pertinents al cas) |
-| E. Gestió de la incertesa | 10 | Contrastar supòsits, identificar dades desconegudes, diferenciar fets de possibilitats, detectar contradiccions. Deixar un tema pendent identificant que cal validar-lo no es penalitza |
-| F. Professionalitat comunicativa (CT3) | 10 | Obertura, claredat i registre escrit, escolta activa i tancament. Descriptors a continuació |
-| G. Adaptació al perfil del client | 10 | Adaptar ritme, nivell de detall, preguntes i estratègia al comportament observable; es valora l'adaptació efectiva, no identificar el perfil per nom |
-| H. Perspectiva de gènere i tracte equitatiu (CT8) | 10 | {filaH} |
-| I. Sostenibilitat i impacte social (CT2) | 10 | Abast, profunditat, equilibri i concreció en requisits. Descriptors a continuació |
+| A. Qualitat de les preguntes | 15% | Pertinència, claredat, precisió, seqüència, preguntes de seguiment i comprovació del que ha entès |
+| B. Extracció de requisits | 15% | Identificar i concretar necessitats, requisits, preferències, objectius i restriccions, i distingir confirmat, preferència, proposta i pendent. No s'exigeix una especificació tècnica completa |
+| C. Context i stakeholders | 10% | Actors pertinents, interessos, responsabilitats, dependències de decisió i restriccions de context |
+| D. Enfocament de negoci | 10% | Necessitat organitzativa, valor esperat, criteris de priorització, condicions econòmiques i operatives (només si són pertinents al cas) |
+| E. Gestió de la incertesa | 10% | Contrastar supòsits, identificar dades desconegudes, diferenciar fets de possibilitats, detectar contradiccions. Deixar un tema pendent identificant que cal validar-lo no es penalitza |
+| F. Professionalitat comunicativa (CT3) | 10% | Obertura, claredat i registre escrit, escolta activa i tancament. Descriptors a continuació |
+| G. Adaptació al perfil del client | 10% | Adaptar ritme, nivell de detall, preguntes i estratègia al comportament observable; es valora l'adaptació efectiva, no identificar el perfil per nom |
+| H. Perspectiva de gènere i tracte equitatiu (CT8) | 10% | {filaH} |
+| I. Sostenibilitat i impacte social (CT2) | 10% | Abast, profunditat, equilibri i concreció en requisits. Descriptors a continuació |
 
 **Nivells per categoria:** 4 Excel·lent, 3 Bo, 2 Bàsic, 1 Insuficient, 0 Sense assoliment. Assigna el nivell segons evidències concretes, no per impressió general.
 
-**Punts per nivell.** Converteix cada nivell en punts amb aquesta taula. No calculis cap fórmula: busca el valor.
+**Puntuació de 0 a 10.** Tots els criteris es puntuen sobre 10 amb aquesta taula, sigui quin sigui el seu pes. No calculis cap fórmula: busca el valor.
 
 | Nivell | 0 | 1 | 2 | 3 | 4 |
 |---|---|---|---|---|---|
-| Criteris de 15 punts (A, B) | 0 | 3,75 | 7,5 | 11,25 | 15 |
-| Criteris de 10 punts ({criteris10}) | 0 | 2,5 | 5 | 7,5 | 10 |
+| Puntuació | 0 | 2,5 | 5 | 7,5 | 10 |
 {notaCalculH}
+**Nota final sobre 100.** Els pesos s'apliquen només en aquest pas: **total = 1,5 × (A + B) + C + D + E + F + G + H + I**.
+
 #### Descriptors dels criteris F, H i I
 
 Tria el nivell comparant les evidències amb aquests descriptors. Els exemples il·lustren el tipus de conducta, no el contingut: el cas real serà diferent.
@@ -1553,21 +1549,31 @@ Sostres: sense cap reformulació ni resum, màxim 2; falta de respecte cap al cl
 
 Sostre: el nivell 4 requereix almenys dos requisits verificables i un compromís explícit.
 
-**No observable (N/O) i 0.** El 0 vol dir que hi havia oportunitat i no es va aprofitar. El N/O vol dir que no hi ha hagut cap oportunitat raonable d'observar el criteri. {codiH} només pot ser N/O si el projecte no té persones usuàries ni treballadores, i I només si el projecte no consumeix recursos ni afecta ningú. No facis servir el N/O perquè la nota sigui baixa. Normalitza: **puntuació final = 100 × punts obtinguts / màxim dels criteris observables**. Indica quins criteris s'han exclòs i el màxim utilitzat. Si hi ha tan poca evidència que la nota no és representativa, marca l'avaluació com a provisional i explica'n el motiu.
+**No observable (N/O) i 0.** El 0 vol dir que hi havia oportunitat i no es va aprofitar. El N/O vol dir que no hi ha hagut cap oportunitat raonable d'observar el criteri. {codiH} només pot ser N/O si el projecte no té persones usuàries ni treballadores, i I només si el projecte no consumeix recursos ni afecta ningú. No facis servir el N/O perquè la nota sigui baixa. Si algun criteri és N/O, deixa'l fora de la suma i normalitza: **nota final = 100 × suma obtinguda / màxim possible**, on el màxim possible és 100 menys el pes de cada criteri N/O. Si hi ha tan poca evidència que la nota no és representativa, marca l'avaluació com a provisional i explica'n el motiu.
 
 ### 9.6 Estructura de l'informe
 
-L'informe es lliura en dues parts: primer el resum, que sempre s'escriu, i després els apartats que triï l'estudiant. Els apartats desenvolupen l'avaluació que ja has fet: han de ser coherents amb els nivells i les puntuacions del resum. No tornis a avaluar ni canviïs cap nota. Escriu el menú en l'idioma de l'avaluació.
+L'informe es lliura en tres missatges: el resum, que sempre s'escriu, i dos apartats opcionals que l'estudiant tria responent a dues preguntes. Els apartats desenvolupen l'avaluació que ja has fet: han de ser coherents amb les puntuacions del resum. No tornis a avaluar ni canviïs cap nota. Escriu les preguntes en l'idioma de l'avaluació.
 
 #### Resum
 
 **Avaluació de l'Entrevista**
 
-Un criteri per línia, amb el format «Criteri: nivell (n) → X/màxim». {formatH}Indica els N/O i la normalització si escau.
+Una taula amb tres columnes i una fila per criteri, de l'A a la I:
 
-Just abans de la puntuació total, en una línia pròpia i separada per línies en blanc, escriu el càlcul en aquest format, que no es mostra a l'estudiant:
+| Criteri | Puntuació (0-10) | Justificació |
+|---|---|---|
+| A. Qualitat de les preguntes (15%) | 7,5 | … |
+| B. Extracció de requisits (15%) | … | … |
+| C. Context i stakeholders (10%) | … | … |
 
-[//]: # (CALCUL: 7,5 + 11,25 + 2,5 + … = SUMA; MAXIM = punts dels criteris observables; FINAL = 100 × SUMA / MAXIM = Z)
+- **Criteri:** la lletra, el nom i el pes entre parèntesis.
+- **Puntuació:** el valor de 0 a 10 de la taula de puntuació, o N/O.
+- **Justificació:** una sola frase breu amb l'evidència principal.{formatH}
+
+Just després de la taula, en una línia pròpia i separada per línies en blanc, escriu el càlcul en aquest format, que no es mostra a l'estudiant:
+
+[//]: # (CALCUL: 1,5 × 7,5 + 1,5 × 5 + 2,5 + … = SUMA; MAXIM = 100; FINAL = 100 × SUMA / MAXIM = Z)
 
 Serveix perquè facis la suma pas a pas abans d'escriure el total. Dins dels parèntesis no hi posis cap altre parèntesi. La puntuació total ha de coincidir amb el resultat d'aquest càlcul.
 
@@ -1575,41 +1581,23 @@ Serveix perquè facis la suma pas a pas abans d'escriure el total. Dins dels par
 
 **Valoració general** — dues o tres frases: què ha funcionat millor i què és el que més cal millorar. No hi repeteixis les notes.
 
-Acaba el resum amb aquest menú:
+Acaba amb la pregunta 1: «Vols veure els punts forts i febles de l'entrevista?»
 
-Vols aprofundir en algun apartat? Respon amb el número (pots triar-ne més d'un, o «tots»). Si no, respon «cap»; més endavant podràs tornar a aquest menú escrivint «{comanda}».
-- **1.** Punts forts
-- **2.** Febleses principals
-- **3.** Competències transversals
-- **4.** El client que t'ha tocat
-- **5.** Com tractar aquest tipus de client
+#### Apartat «Punts forts i febles» (si respon que sí a la pregunta 1)
 
-Escriu sempre el menú així, com a llista de pics amb el número en negreta, i no com a llista numerada: una llista numerada es renumera sola i l'estudiant veuria números que no corresponen als apartats.
+- **Punts forts:** fins a tres, cadascun amb una evidència concreta de la conversa i el seu valor per a l'entrevista.
+- **Punts febles:** fins a tres demostrables, cadascun amb evidència, conseqüència i una recomanació accionable. No n'inventis per arribar a tres; prioritza els que més afecten la definició de requisits.
 
-#### Apartats
+Acaba amb la pregunta 2: «Vols veure quin client t'ha tocat i com tractar-lo?»
 
-1. **Punts forts** — fins a tres, cadascun amb una evidència concreta de la conversa i el seu valor per a l'entrevista.
+#### Apartat «El client que t'ha tocat i com tractar-lo» (si respon que sí a la pregunta 2)
 
-2. **Febleses principals** — fins a tres demostrables, cadascuna amb evidència, conseqüència i una recomanació accionable. No n'inventis per arribar a tres; prioritza les que més afecten la definició de requisits.
+Nom fictici i càrrec. Després, per a cada eix, un bloc breu en llenguatge planer: nivell assignat, conducta realment manifestada, com ho va gestionar l'estudiant i una pregunta, formulació o acció concreta per a una entrevista futura, basada en la «guia de maneig» del nivell. Diferencia el tret assignat de la conducta que va arribar a manifestar-se, i no atribueixis a l'estudiant la capacitat de detectar un tret que no es va fer visible. Per a E6: si era Neutral, indica que no es preveia cap conducta diferenciada; si no era Neutral però no es va manifestar prou, explica que no hi ha evidència suficient per valorar-ne la gestió; si es va manifestar, explica com respondre-hi professionalment, afecti qui afecti.
 
-3. **Competències transversals** — justificació dels criteris F, H i I, sense nota addicional. Per a cada competència: el nivell, l'evidència principal (una cita breu d'un missatge de l'estudiant) i què li hauria calgut per arribar al nivell següent.
-   - Comunicació eficaç (CT3): criteri F.
-   - {ctH}
-   - Sostenibilitat i compromís social (CT2): criteri I.
-
-4. **El client que t'ha tocat** — nom fictici, càrrec i perfil complet. Un eix per línia, en llenguatge planer: nivell assignat, conducta realment manifestada, si l'estudiant la va gestionar bé i una evidència. Diferencia el tret assignat de la conducta que va arribar a manifestar-se, i no atribueixis a l'estudiant la capacitat de detectar un tret que no es va fer visible.
-
-5. **Com tractar aquest tipus de client** — per a cada eix, una guia pràctica basada en la «guia de maneig» del nivell assignat i en el que va passar: què va funcionar, què es podria fer diferent, i una pregunta, formulació o acció concreta per a una entrevista futura. Per a E6: si era Neutral, indica que no es preveia cap conducta diferenciada; si no era Neutral però no es va manifestar prou, explica que no hi ha evidència suficient per valorar-ne la gestió; si es va manifestar, explica com respondre-hi professionalment, afecti qui afecti.
-
-#### Continuació
-
-Si després dels apartats encara en queden de pendents, acaba amb: «Vols veure un altre apartat? Respon amb el número, o "cap" si no en vols veure més.» i la llista només dels pendents, amb el mateix format i el seu número original. Per exemple, si queden l'1 i el 3:
-
-- **1.** Punts forts
-- **3.** Competències transversals`;
+Acaba amb la frase de tancament.`;
 
 const P_NOTA_SENSE_E6 = `
-- En aquesta simulació l'eix E6 (biaix de gènere del client) no està actiu. A CT8, indica que no es preveia cap conducta del client relacionada amb el gènere.`;
+- En aquesta simulació l'eix E6 (biaix de gènere del client) no està actiu: no hi ha cap resposta a un biaix del client per valorar.`;
 
 /* Criteri H: versió completa (H1 + H2) si el client pot mostrar biaix de gènere; si no, només H2 */
 const P_H_COMPLET = `**H. Perspectiva de gènere i tracte equitatiu (CT8).** Té dues parts:
@@ -1617,7 +1605,7 @@ const P_H_COMPLET = `**H. Perspectiva de gènere i tracte equitatiu (CT8).** Té
 - **H2. Integrar necessitats per raó de sexe i gènere en els requisits.** És pertinent sempre que el projecte tingui persones usuàries o treballadores. Àmbits possibles: composició i previsió de les persones usuàries o de la plantilla, ergonomia i dimensions corporals, equips de protecció, vestidors i serveis, horaris i conciliació, seguretat percebuda, i interseccions amb l'edat o la discapacitat.
 - **H1. Resposta professional davant un biaix del client.** Només s'avalua si el teu nivell d'E6 era 2, 3 o 4 i la conducta es va arribar a manifestar. Si no, H1 és N/O.
 
-**Punts d'H:** si H1 és observable, H = nivell H1 + 1,5 × nivell H2 (màxim 4 + 6 = 10). Si H1 és N/O, H = 2,5 × nivell H2, que correspon a la fila de 10 punts de la taula.
+**Punts d'H:** si H1 és observable, H = nivell H1 + 1,5 × nivell H2 (màxim 4 + 6 = 10). Si H1 és N/O, H = 2,5 × nivell H2, que correspon a la taula de puntuació. En tots dos casos, H ja és sobre 10.
 
 *H2*
 - **4:** Pregunta per la composició de les persones usuàries o treballadores, explora almenys dues necessitats diferenciades pertinents i les converteix en requisits verificables que valida amb el client. *Ex.: «Llocs de treball regulables per a tota la plantilla, de la persona més baixa a la més alta, i vestidors dimensionats segons la previsió de plantilla. Hi esteu d'acord?»*
@@ -1650,21 +1638,17 @@ const VARIANT_H = {
     codiH: "H2",
     frontH1: "; la resposta davant un biaix de gènere compta a H1",
     filaH: "H2: integrar necessitats per raó de sexe i gènere en els requisits. H1: resposta professional davant un biaix del client. Descriptors a continuació",
-    criteris10: "C, D, E, F, G, I",
-    notaCalculH: "\nEl criteri H té el seu propi càlcul: vegeu-lo al criteri H, més avall.\n",
+    notaCalculH: "\nEl criteri H té el seu propi càlcul sobre 10: vegeu-lo al criteri H, més avall.\n",
     blocH: P_H_COMPLET,
-    formatH: "Per a H, indica el nivell d'H2 i, si escau, el d'H1. ",
-    ctH: "Perspectiva de gènere (CT8): criteri H. Si H1 és N/O, indica-ho sense penalitzar."
+    formatH: " A H, indica breument com valores H2 i, si escau, H1."
   },
   simple: {
     codiH: "H",
     frontH1: "",
     filaH: "Integrar necessitats per raó de sexe i gènere en els requisits. Descriptors a continuació",
-    criteris10: "C, D, E, F, G, H, I",
     notaCalculH: "",
     blocH: P_H_SIMPLE,
-    formatH: "",
-    ctH: "Perspectiva de gènere (CT8): criteri H."
+    formatH: ""
   }
 };
 
