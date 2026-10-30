@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Generador de Clients v0.5.2</title>
+<title>Generador de Clients v0.5.3</title>
 <style>
   :root {
     --bg: #181816;
@@ -23,6 +23,9 @@
     --radius-sm: 8px;
     --success: #a8c49e;
     --error: #e58869;
+    /* Color del mode aleatori (complementari del taronja) */
+    --random: #4a9ea3;
+    --random-glow: rgba(74, 158, 163, 0.35);
   }
 
   body.light-theme {
@@ -39,6 +42,8 @@
     --btn-secondary-hover: #dcd8cb;
     --pre-bg: #eeece4;
     --pre-text: #2f6832;
+    --random: #2f8a90;
+    --random-glow: rgba(47, 138, 144, 0.3);
   }
 
   * { box-sizing: border-box; }
@@ -250,7 +255,7 @@
     position: absolute;
     bottom: calc(100% + 8px);
     right: -8px;
-    width: 280px;
+    width: min(280px, calc(100vw - 24px));
     background-color: var(--card-bg);
     border: 1px solid var(--border);
     color: var(--text-primary);
@@ -265,6 +270,8 @@
   }
   .tooltip-container:hover .tooltip-box,
   .tooltip-container:focus-within .tooltip-box { visibility: visible; opacity: 1; }
+  /* Interrogants a l'esquerra de la pantalla: el tooltip s'obre cap a la dreta */
+  .tooltip-box.tt-right { right: auto; left: -8px; }
 
   /* --- Botons --- */
   .btn {
@@ -341,6 +348,9 @@
   .collapsible.collapsed { grid-template-rows: 0fr; opacity: 0; pointer-events: none; }
   .collapsible-inner { overflow: hidden; min-height: 0; }
   .collapsible.collapsed .collapsible-inner { visibility: hidden; transition: visibility 0s linear 0.34s; }
+  /* Un cop desplegat, el bloc deixa sortir els tooltips (si no, queden tallats) */
+  @keyframes desplegat { to { overflow: visible; } }
+  #dynIdentityBlock:not(.collapsed) > .collapsible-inner { animation: desplegat 0s linear 0.36s forwards; }
 
   .trait-row {
     display: grid;
@@ -402,9 +412,10 @@
     background-color: var(--accent);
     box-shadow: 0 2px 8px rgba(217, 119, 87, 0.35);
     transform: translateX(calc(var(--i, 0) * (100% + 3px)));
-    transition: transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform 0.36s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.25s ease, box-shadow 0.25s ease;
     pointer-events: none;
   }
+  .seg-grid.is-random .seg-indicator { background-color: var(--random); box-shadow: 0 2px 8px var(--random-glow); }
   .seg-grid.no-anim .seg-indicator { transition: none; }
   .trait-desc { transition: opacity 0.18s ease; }
   .trait-desc.fade { opacity: 0; }
@@ -586,12 +597,90 @@
 
   .hidden { display: none !important; }
 
+  /* --- Barra superior: mode avançat a l'esquerra, importar a la dreta --- */
+  .top-toolbar { justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+  /* --- Opcions del mode dinàmic --- */
+  .dyn-identity {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  /* En mode dinàmic hi ha una opció més («Aleatori»): més amplada i text en dues línies si cal */
+  .dyn-traits .trait-row { grid-template-columns: minmax(0, 1fr) 530px; }
+  .dyn-traits .seg-btn { white-space: normal; overflow: visible; line-height: 1.2; padding: 6px 4px; }
+  .area-group { display: flex; gap: 10px; flex-wrap: wrap; }
+  .area-group .lang-checkbox-label { padding: 8px 14px; font-size: 0.82rem; }
+  .areas-head { display: flex; align-items: baseline; gap: 8px; margin: 4px 0 10px; }
+  .areas-label { font-size: 0.82rem; color: var(--text-secondary); margin: 0; }
+
+  /* Tot el que és aleatori fa servir el color secundari */
+  #dynamicProfile:checked + .track,
+  #randomIdentity:checked + .track { background-color: var(--random); border-color: var(--random); }
+  .dynamic-banner { border-color: var(--random); background-color: rgba(74, 158, 163, 0.1); }
+  .area-group .lang-checkbox-label input { accent-color: var(--random); }
+  .seg-btn.seg-random { font-style: italic; }
+  .seg-btn.seg-random[aria-pressed="true"] { font-style: normal; }
+
+  /* --- Mode avançat: botó d'edició de cada eix --- */
+  .trait-name { display: flex; align-items: center; gap: 8px; }
+  .gear-btn {
+    position: relative;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    border-radius: 6px;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .gear-btn svg { width: 14px; height: 14px; display: block; }
+  .gear-btn:hover, .gear-btn:focus-visible { color: var(--text-primary); border-color: var(--border-focus); outline: none; }
+  .gear-btn.edited::after {
+    content: "";
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--accent);
+    border: 2px solid var(--card-bg);
+  }
+
+  /* --- Editor de textos de l'eix (finestra modal) --- */
+  .modal.modal-narrow { max-width: 720px; }
+  .ed-section { padding: 14px 0; border-top: 1px solid var(--border); }
+  .ed-section:first-child { border-top: none; padding-top: 0; }
+  .ed-section h3 { font-size: 0.92rem; font-weight: 600; margin: 0 0 8px; }
+  .ed-label { display: block; font-size: 0.76rem; color: var(--text-secondary); margin: 8px 0 4px; }
+  .ed-section textarea { min-height: 56px; font-size: 0.82rem; }
+  .ed-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 24px;
+    border-top: 1px solid var(--border);
+  }
+  .ed-foot .btn { width: auto; padding: 8px 16px; font-size: 0.82rem; }
+  .ed-foot .btn:disabled { opacity: 0.45; cursor: default; }
+
   @media (max-width: 720px) {
-    .trait-row { grid-template-columns: 1fr; grid-template-areas: "name" "seg" "desc"; }
+    .trait-row, .dyn-traits .trait-row { grid-template-columns: 1fr; grid-template-areas: "name" "seg" "desc"; }
     .guide-cols { grid-template-columns: 1fr; }
     .modal-head, .modal-body { padding-left: 16px; padding-right: 16px; }
     .seg-btn { white-space: normal; overflow: visible; line-height: 1.2; font-size: 0.74rem; padding: 6px 3px; hyphens: auto; }
     .btn-group-row { flex-direction: column; }
+    .ed-foot { padding-left: 16px; padding-right: 16px; }
   }
 </style>
 </head>
@@ -616,6 +705,17 @@
   </header>
 
   <div class="top-toolbar">
+    <div class="switch-row">
+      <label class="switch">
+        <input type="checkbox" id="advancedMode">
+        <span class="track"></span>
+        <span id="ui_lbl_advanced"></span>
+      </label>
+      <div class="tooltip-container">
+        <span class="tooltip-icon" tabindex="0">?</span>
+        <div class="tooltip-box tt-right" id="ui_tt_advanced"></div>
+      </div>
+    </div>
     <button class="btn btn-secondary" id="ui_btn_import" onclick="document.getElementById('fileInput').click()"></button>
     <input type="file" id="fileInput" accept=".json" class="hidden" onchange="importarJson(event)">
   </div>
@@ -648,7 +748,7 @@
       </label>
       <div class="tooltip-container">
         <span class="tooltip-icon" tabindex="0">?</span>
-        <div class="tooltip-box" id="ui_tt_force_lang"></div>
+        <div class="tooltip-box tt-right" id="ui_tt_force_lang"></div>
       </div>
     </div>
   </div>
@@ -658,17 +758,6 @@
     <div class="card-head">
       <div class="card-title" id="ui_sec_traits"></div>
       <div class="mode-switches">
-        <div class="switch-row">
-          <label class="switch">
-            <input type="checkbox" id="advancedMode">
-            <span class="track"></span>
-            <span id="ui_lbl_advanced"></span>
-          </label>
-          <div class="tooltip-container">
-            <span class="tooltip-icon" tabindex="0">?</span>
-            <div class="tooltip-box" id="ui_tt_advanced"></div>
-          </div>
-        </div>
         <div class="switch-row">
           <label class="switch">
             <input type="checkbox" id="dynamicProfile">
@@ -690,7 +779,35 @@
       </div>
     </div>
 
-    <!-- Identitat (amagada en mode dinàmic: la genera l'assistent) -->
+    <!-- Mode dinàmic: identitat aleatòria i àrees permeses -->
+    <div id="dynIdentityBlock" class="collapsible collapsed">
+      <div class="collapsible-inner">
+        <div class="dyn-identity">
+          <div class="switch-row">
+            <label class="switch">
+              <input type="checkbox" id="randomIdentity" checked>
+              <span class="track"></span>
+              <span id="ui_lbl_random_identity"></span>
+            </label>
+            <div class="tooltip-container">
+              <span class="tooltip-icon" tabindex="0">?</span>
+              <div class="tooltip-box tt-right" id="ui_tt_random_identity"></div>
+            </div>
+          </div>
+          <div id="areasBlock" class="collapsible">
+            <div class="collapsible-inner">
+              <div class="areas-head">
+                <p class="areas-label" id="ui_lbl_areas"></p>
+                <span class="lang-default-note" id="ui_lbl_areas_hint"></span>
+              </div>
+              <div class="area-group" id="areasContainer"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Identitat fixa (en mode dinàmic, només si el nom i el càrrec no són aleatoris) -->
     <div id="identityBlock" class="collapsible">
       <div class="collapsible-inner">
         <label class="field" for="charName" id="ui_lbl_charname"></label>
@@ -708,10 +825,10 @@
       </div>
     </div>
 
-    <!-- Trets (amagats en mode dinàmic: se sortegen a cada conversa) -->
-    <div id="traitsBlock" class="collapsible">
-      <div class="collapsible-inner">
-        <div class="traits-toolbar">
+    <!-- Trets. En mode dinàmic, cada eix pot ser aleatori o tenir un nivell fix -->
+    <div id="traitsBlock">
+      <div>
+        <div class="traits-toolbar" id="traitsToolbar">
           <button class="btn btn-secondary" id="ui_btn_random_traits" onclick="randomitzarTrets()"></button>
         </div>
         <div id="traitsContainer"></div>
@@ -719,9 +836,9 @@
       </div>
     </div>
 
-    <!-- Mode avançat: tret lliure -->
-    <div id="freeTraitBox" class="collapsible collapsed">
-      <div class="collapsible-inner">
+    <!-- Tret lliure (opcional) -->
+    <div id="freeTraitBox">
+      <div>
         <div class="free-trait">
           <div class="free-head">
             <label class="field" for="freeTrait" id="ui_lbl_free"></label>
@@ -769,6 +886,24 @@
   </div>
 </div>
 
+<!-- Mode avançat: editor del text que cada eix aporta al prompt -->
+<div id="editorOverlay" class="modal-overlay" onclick="if (event.target === this) tancarEditor()">
+  <div class="modal modal-narrow" role="dialog" aria-modal="true" aria-labelledby="edTitle">
+    <div class="modal-head">
+      <div>
+        <h2 id="edTitle"></h2>
+        <p id="edIntro"></p>
+      </div>
+      <button type="button" class="modal-close" id="edClose" onclick="tancarEditor()">×</button>
+    </div>
+    <div class="modal-body" id="edBody"></div>
+    <div class="ed-foot">
+      <button type="button" class="btn btn-secondary btn-sm" id="edReset" onclick="restaurarEixEditor()"></button>
+      <button type="button" class="btn btn-primary btn-sm" id="edDone" onclick="tancarEditor()"></button>
+    </div>
+  </div>
+</div>
+
 <!-- Guia per redactar el cas (només referència: no modifica el prompt) -->
 <div id="guideOverlay" class="modal-overlay" onclick="if (event.target === this) tancarGuiaCas()">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
@@ -789,7 +924,7 @@
      Es pot modificar sense tocar la lògica (bloc de sota).
      ========================================================================= -->
 <script>
-const VERSIO = "v0.5.2";
+const VERSIO = "v0.5.3";
 
 /* Model que LAMB farà servir per a l'assistent (clau "llm" de les metadades).
    Ha de coincidir exactament amb un model habilitat a l'organització de LAMB;
@@ -799,7 +934,6 @@ const MODEL_LLM = "gpt-5.6-terra";
 /* -------------------------------------------------------------------------
    1. TRETS DE PERSONALITAT (eixos E1–E6 del prompt de referència)
    actiu:     false → el tret no surt enlloc.
-   avancat:   true  → només surt amb el Mode avançat activat.
    eix:       nom de l'eix al prompt (E1…E6). L'ordre de les opcions és el nivell (1, 2, 3…).
    capcalera: frase que encapçala l'eix dins del prompt.
    Per a cada opció:
@@ -816,7 +950,6 @@ const ATRIBUTS = [
     id: "experiencia",
     eix: "E1",
     actiu: true,
-    avancat: false,
     nom: { cat: "Experiència", es: "Experiencia", en: "Experience" },
     capcalera: "EXPERIÈNCIA: l'antiguitat i l'experiència han d'influir en la manera d'argumentar, valorar les propostes, assumir compromisos i recórrer a experiències anteriors. No redueixis tots els nivells a una actitud professional genèrica.",
     defecte: "intermedia",
@@ -865,7 +998,6 @@ const ATRIBUTS = [
     id: "prioritzacio",
     eix: "E2",
     actiu: true,
-    avancat: false,
     nom: { cat: "Priorització", es: "Priorización", en: "Priorities" },
     capcalera: "PRIORITZACIÓ: la prioritat assignada ha d'influir en els aspectes que el client destaca espontàniament, les preguntes que considera importants i els arguments que utilitza per valorar les propostes.",
     defecte: "legal",
@@ -914,7 +1046,6 @@ const ATRIBUTS = [
     id: "poder",
     eix: "E3",
     actiu: true,
-    avancat: false,
     nom: { cat: "Poder", es: "Poder", en: "Power" },
     capcalera: "PODER DE DECISIÓ: el nivell de poder ha de condicionar els compromisos que el client pot assumir, la seva capacitat per aprovar propostes i la necessitat de consultar altres responsables. No facis que tots els clients actuïn com si tinguessin la decisió final.",
     defecte: "decisor",
@@ -963,7 +1094,6 @@ const ATRIBUTS = [
     id: "estil",
     eix: "E4",
     actiu: true,
-    avancat: false,
     nom: { cat: "Estil comunicatiu", es: "Estilo comunicativo", en: "Communication style" },
     capcalera: "ESTIL COMUNICATIU: el nivell ha de ser perceptible en la longitud i el ritme de les respostes, el grau de directivitat, la tolerància a les explicacions llargues, la necessitat de garanties o la demanda de dades i justificacions.",
     defecte: "estable",
@@ -1008,7 +1138,6 @@ const ATRIBUTS = [
     id: "informacio",
     eix: "E5",
     actiu: true,
-    avancat: false,
     nom: { cat: "Gestió de la informació", es: "Gestión de la información", en: "Information handling" },
     capcalera: "GESTIÓ DE LA INFORMACIÓ: el nivell ha de condicionar de manera efectiva com s'explica i es comparteix la informació coneguda.",
     defecte: "cooperativa",
@@ -1040,12 +1169,12 @@ const ATRIBUTS = [
     ]
   },
 
-  /* ===== E6 · PERSPECTIVA DE GÈNERE (mode avançat) ===== */
+  /* ===== E6 · BIAIX DE GÈNERE DEL CLIENT =====
+     Amb «Neutral» (per defecte) l'eix no s'escriu al prompt i H1 queda com a no observable. */
   {
     id: "genere",
     eix: "E6",
     actiu: true,
-    avancat: true,
     nom: { cat: "Biaix de gènere del client", es: "Sesgo de género del cliente", en: "Client gender bias" },
     capcalera: "PERSPECTIVA DE GÈNERE: determina com el client tracta l'estudiant en funció del gènere que identifica. Aquest eix és independent de la resta del perfil: el comportament concret també ha de reflectir E1–E5, però no es pot neutralitzar el nivell d'E6 per mantenir una actitud excessivament amable, igualitària o cooperativa.",
     defecte: "neutral",
@@ -1087,7 +1216,7 @@ const ATRIBUTS = [
 ];
 
 /* -------------------------------------------------------------------------
-   2. TRET ADDICIONAL LLIURE (mode avançat)
+   2. TRET ADDICIONAL LLIURE (opcional)
    ------------------------------------------------------------------------- */
 const TRET_LLIURE = { maxCaracters: 300 };
 
@@ -1267,12 +1396,33 @@ Per evitar repetir sempre els mateixos perfils o càrrecs habituals, cada conver
 
 1. **Nom i cognoms.**
 2. **Àrea de negoci:**
-   - *Àrees corporatives:* Finances, Compres i Contractació, Recursos Humans, Assessoria Jurídica, Seguretat i Salut Laboral.
-   - *Àrees de negoci i operació:* Operacions de Línia, Atenció al Client, Comercial i Màrqueting, Comunicació i Mitjans.
-   - *Àrees tècniques i estratègiques:* Sostenibilitat i Medi Ambient, Manteniment d'Infraestructures, Sistemes d'Informació (TIC), Qualitat, Planificació Estratègica.
+{arees}
 3. **Motiu de la reunió:** defineix la raó per la qual participa segons la seva àrea específica (p. ex., un Cap de Compres hi participa per validar plecs econòmics; un Cap de Seguretat, per riscos operatius; una Tècnica de Comunicació, per l'impacte reputacional).
 
 {abast}`;
+
+/* Àrees on pot treballar el client quan el nom i el càrrec són aleatoris.
+   El docent pot limitar-les des del mode dinàmic. Si no en marca cap, valen totes. */
+const AREES = [
+  {
+    id: "corporatives",
+    nom: { cat: "Corporatives", es: "Corporativas", en: "Corporate" },
+    prompt: "Àrees corporatives",
+    llista: "Finances, Compres i Contractació, Recursos Humans, Assessoria Jurídica, Seguretat i Salut Laboral"
+  },
+  {
+    id: "negoci",
+    nom: { cat: "Negoci i operació", es: "Negocio y operación", en: "Business and operations" },
+    prompt: "Àrees de negoci i operació",
+    llista: "Operacions de Línia, Atenció al Client, Comercial i Màrqueting, Comunicació i Mitjans"
+  },
+  {
+    id: "tecniques",
+    nom: { cat: "Tècniques i estratègiques", es: "Técnicas y estratégicas", en: "Technical and strategic" },
+    prompt: "Àrees tècniques i estratègiques",
+    llista: "Sostenibilitat i Medi Ambient, Manteniment d'Infraestructures, Sistemes d'Informació (TIC), Qualitat, Planificació Estratègica"
+  }
+];
 
 const P_ABAST = `Per defecte no ets el responsable directe del projecte ni un expert global: només domines el que pertany a la teva àrea funcional específica. Per a la resta de temes, indica clarament que cal consultar amb altres departaments.`;
 
@@ -1362,10 +1512,10 @@ const P_OBTENCIO = `### 7.1 Obtenció i persistència
 
 1. **Recupera.** Mira si algun missatge teu anterior comença exactament amb una línia amb aquest format: [//]: # (PERFIL={format}). Si existeix, usa aquest perfil sense canviar-lo mai. Si no la trobes en una conversa ja iniciada, continua coherent amb la conducta que has mostrat fins ara.
 
-2. **Si és el primer missatge,** sorteja el perfil. Els rangs són: {rangs}.
+2. {pas2}
 
 3. **Sorteig:**
-   - No intentis formar un perfil «coherent», «lògic» o «segur». TOTS els nivells de cada eix tenen EXACTAMENT la mateixa probabilitat d'aparèixer (equiprobabilitat).
+   - No intentis formar un perfil «coherent», «lògic» o «segur». TOTS els nivells de {quins} tenen EXACTAMENT la mateixa probabilitat d'aparèixer (equiprobabilitat).
    - No seleccionis un perfil perquè sigui equilibrat, còmode, fàcil d'interpretar o menys conflictiu. Són vàlides les combinacions amb diversos nivells extrems, encara que produeixin una entrevista exigent.
    - Abans de triar, calcula mentalment un nombre o aplica una funció d'entropia interna per a cada eix de manera 100% independent.
    - Força la variabilitat: {variabilitat}
@@ -1374,8 +1524,26 @@ const P_OBTENCIO = `### 7.1 Obtenció i persistència
 
 5. **El perfil és immutable.** No el tornis a sortejar ni el modifiquis per cap pregunta, canvi d'idioma, interrupció, petició de reiniciar o resposta de l'estudiant.`;
 
-const P_VARIABILITAT_AMB_E6 = "evita repetir per defecte els valors E4=4, E5=2 o E6=1. Assegura't que eixos com E6 (1, 2, 3, 4) i E4 (1, 2, 3, 4) explorin tots els seus nivells al llarg de diferents converses.";
-const P_VARIABILITAT_SENSE_E6 = "evita repetir per defecte els valors E4=4 o E5=2. Assegura't que eixos com E4 (1, 2, 3, 4) explorin tots els seus nivells al llarg de diferents converses.";
+/* Punt 2 de l'obtenció: tots els eixos aleatoris, o només alguns (la resta, fixos) */
+const P_SORTEIG_TOT = "**Si és el primer missatge,** sorteja el perfil. Els rangs són: {rangs}.";
+const P_SORTEIG_PARCIAL = "**Si és el primer missatge,** sorteja **només aquests eixos**: {rangs}. {fixos} {escriu}; per exemple: [//]: # (PERFIL={exemple}), on cada x és el nivell que hagis sortejat.";
+const P_FIX_UN = "**{eix} no se sorteja:** el seu nivell és sempre {nivell}.";
+const P_FIX_DIVERSOS = "**{eixos} no se sortegen:** els seus nivells són sempre {nivells}.";
+const P_ESCRIU_UN = "Escriu-lo igualment a la seva posició de la línia";
+const P_ESCRIU_DIVERSOS = "Escriu-los igualment a les seves posicions de la línia";
+const P_QUINS_TOT = "cada eix";
+const P_QUINS_PARCIAL = "cada eix que sorteges";
+const P_NIVELL_FIX_DINAMIC = "Nivell fix (no se sorteja)";
+
+/* «Força la variabilitat»: valors que el model tendeix a repetir i eixos de quatre nivells.
+   Només s'esmenten els eixos que se sortegen. */
+const VARIABILITAT = {
+  favorits: [{ eix: "E4", nivell: 4 }, { eix: "E5", nivell: 2 }, { eix: "E6", nivell: 1 }],
+  quatreNivells: ["E6", "E4"],
+  evita: "evita repetir per defecte els valors {valors}.",
+  explora: " Assegura't que eixos com {eixos} explorin tots els seus nivells al llarg de diferents converses.",
+  generic: "assegura't que tots els nivells dels eixos que sorteges apareguin al llarg de diferents converses."
+};
 
 /* Funció de cada eix (per a la llista de l'apartat d'aplicació) */
 const FUNCIO_EIX = {
@@ -1508,10 +1676,10 @@ En els passos C i D, no tornis a la simulació ni modifiquis cap nota.
 | C. Context i stakeholders | 10% | Actors pertinents, interessos, responsabilitats, dependències de decisió i restriccions de context |
 | D. Enfocament de negoci | 10% | Necessitat organitzativa, valor esperat, criteris de priorització, condicions econòmiques i operatives (només si són pertinents al cas) |
 | E. Gestió de la incertesa | 10% | Contrastar supòsits, identificar dades desconegudes, diferenciar fets de possibilitats, detectar contradiccions. Deixar un tema pendent identificant que cal validar-lo no es penalitza |
-| F. Professionalitat comunicativa (CT3) | 10% | Obertura, claredat i registre escrit, escolta activa i tancament. Descriptors a continuació |
+| F. Professionalitat comunicativa | 10% | Obertura, claredat i registre escrit, escolta activa i tancament. Descriptors a continuació |
 | G. Adaptació al perfil del client | 10% | Adaptar ritme, nivell de detall, preguntes i estratègia al comportament observable; es valora l'adaptació efectiva, no identificar el perfil per nom |
-| H. Perspectiva de gènere i tracte equitatiu (CT8) | 10% | {filaH} |
-| I. Sostenibilitat i impacte social (CT2) | 10% | Abast, profunditat, equilibri i concreció en requisits. Descriptors a continuació |
+| H. Perspectiva de gènere i tracte equitatiu | 10% | {filaH} |
+| I. Sostenibilitat i impacte social | 10% | Abast, profunditat, equilibri i concreció en requisits. Descriptors a continuació |
 
 **Nivells per categoria:** 4 Excel·lent, 3 Bo, 2 Bàsic, 1 Insuficient, 0 Sense assoliment. Assigna el nivell segons evidències concretes, no per impressió general.
 
@@ -1527,7 +1695,7 @@ En els passos C i D, no tornis a la simulació ni modifiquis cap nota.
 
 Tria el nivell comparant les evidències amb aquests descriptors. Els exemples il·lustren el tipus de conducta, no el contingut: el cas real serà diferent.
 
-**F. Professionalitat comunicativa (CT3).** Observa l'obertura (presentar-se i explicar el propòsit), la claredat i el registre escrit, l'escolta activa (reformular, fer seguiment de la resposta anterior, resumir, detectar contradiccions) i el tancament (resum, validació i passos següents). F sempre és observable.
+**F. Professionalitat comunicativa.** Observa l'obertura (presentar-se i explicar el propòsit), la claredat i el registre escrit, l'escolta activa (reformular, fer seguiment de la resposta anterior, resumir, detectar contradiccions) i el tancament (resum, validació i passos següents). F sempre és observable.
 
 - **4:** Obertura i tancament complets; missatges clars, sense jargó no explicat. Reformula o resumeix en diversos moments, aclareix almenys una ambigüitat o contradicció i demana al client que validi el resum final. *Ex.: «Abans m'heu dit X i ara Y: amb quina xifra treballem? […] Resumeixo el que hem acordat: … Ho he entès bé?»*
 - **3:** Clar i ben estructurat, amb lapses aïllats (alguna pregunta massa llarga, un tecnicisme). Almenys dues reformulacions o preguntes de seguiment basades en la resposta del client. Fa un resum final, però no en demana la validació.
@@ -1539,7 +1707,7 @@ Sostres: sense cap reformulació ni resum, màxim 2; falta de respecte cap al cl
 
 {blocH}
 
-**I. Sostenibilitat i impacte social (CT2).** Observa l'abast (dimensions ambiental, social i econòmica pertinents), la profunditat (cicle de vida, persones afectades que no són a l'entrevista, riscos), l'equilibri (compromisos entre tècnica, economia i sostenibilitat) i la concreció (requisits o indicadors). És pertinent sempre que el projecte consumeixi energia o materials, generi residus o afecti persones.
+**I. Sostenibilitat i impacte social.** Observa l'abast (dimensions ambiental, social i econòmica pertinents), la profunditat (cicle de vida, persones afectades que no són a l'entrevista, riscos), l'equilibri (compromisos entre tècnica, economia i sostenibilitat) i la concreció (requisits o indicadors). És pertinent sempre que el projecte consumeixi energia o materials, generi residus o afecti persones.
 
 - **4:** Integra les dimensions pertinents, explicita algun compromís amb el client i n'obté almenys dos requisits amb indicador o criteri verificable. *Ex.: «Fixem un consum màxim de X i reutilitzem l'estructura existent. La solució eficient costa més d'entrada: la prioritzem?»*
 - **3:** Per iniciativa pròpia, explora almenys dues dimensions, o una a fons, i n'obté algun requisit o restricció, encara que no sigui quantificat.
@@ -1600,7 +1768,7 @@ const P_NOTA_SENSE_E6 = `
 - En aquesta simulació l'eix E6 (biaix de gènere del client) no està actiu: no hi ha cap resposta a un biaix del client per valorar.`;
 
 /* Criteri H: versió completa (H1 + H2) si el client pot mostrar biaix de gènere; si no, només H2 */
-const P_H_COMPLET = `**H. Perspectiva de gènere i tracte equitatiu (CT8).** Té dues parts:
+const P_H_COMPLET = `**H. Perspectiva de gènere i tracte equitatiu.** Té dues parts:
 
 - **H2. Integrar necessitats per raó de sexe i gènere en els requisits.** És pertinent sempre que el projecte tingui persones usuàries o treballadores. Àmbits possibles: composició i previsió de les persones usuàries o de la plantilla, ergonomia i dimensions corporals, equips de protecció, vestidors i serveis, horaris i conciliació, seguretat percebuda, i interseccions amb l'edat o la discapacitat.
 - **H1. Resposta professional davant un biaix del client.** Només s'avalua si el teu nivell d'E6 era 2, 3 o 4 i la conducta es va arribar a manifestar. Si no, H1 és N/O.
@@ -1623,7 +1791,7 @@ const P_H_COMPLET = `**H. Perspectiva de gènere i tracte equitatiu (CT8).** Té
 
 Sostre: si l'estudiant introdueix un estereotip o llenguatge sexista, H té un màxim d'1.`;
 
-const P_H_SIMPLE = `**H. Perspectiva de gènere i tracte equitatiu (CT8).** Observa si l'estudiant integra les necessitats per raó de sexe i gènere en els requisits. És pertinent sempre que el projecte tingui persones usuàries o treballadores. Àmbits possibles: composició i previsió de les persones usuàries o de la plantilla, ergonomia i dimensions corporals, equips de protecció, vestidors i serveis, horaris i conciliació, seguretat percebuda, i interseccions amb l'edat o la discapacitat.
+const P_H_SIMPLE = `**H. Perspectiva de gènere i tracte equitatiu.** Observa si l'estudiant integra les necessitats per raó de sexe i gènere en els requisits. És pertinent sempre que el projecte tingui persones usuàries o treballadores. Àmbits possibles: composició i previsió de les persones usuàries o de la plantilla, ergonomia i dimensions corporals, equips de protecció, vestidors i serveis, horaris i conciliació, seguretat percebuda, i interseccions amb l'edat o la discapacitat.
 
 - **4:** Pregunta per la composició de les persones usuàries o treballadores, explora almenys dues necessitats diferenciades pertinents i les converteix en requisits verificables que valida amb el client. *Ex.: «Llocs de treball regulables per a tota la plantilla, de la persona més baixa a la més alta, i vestidors dimensionats segons la previsió de plantilla. Hi esteu d'acord?»*
 - **3:** Per iniciativa pròpia, identifica almenys una necessitat concreta i la lliga a un requisit, però no ho fa de manera sistemàtica ni verificable.
@@ -1677,10 +1845,28 @@ const UI_LANGS = {
     secTraits: "Personatge i trets",
     btnRandomTraits: "🎲 Aleatoritzar",
     lblAdvanced: "Mode avançat",
-    ttAdvanced: "Afegeix el biaix de gènere del client i un camp lliure per escriure un tret propi. La perspectiva de gènere de l'estudiant (CT8) s'avalua sempre, amb aquest mode o sense.",
+    ttAdvanced: "Mostra un botó ⚙ a cada eix de personalitat per veure i editar el text que aporta al prompt. Si el desactives, es tornen a fer servir els textos originals.",
     lblDynamic: "Mode dinàmic",
-    ttDynamic: "A cada conversa nova, l'assistent s'inventa el nom i el càrrec del client i sorteja tots els trets de personalitat. El cas es manté igual.",
-    bannerDynamic: "<strong>Mode experimental.</strong> A cada conversa nova, l'assistent s'inventa la identitat del client (nom i càrrec) i sorteja tots els trets de personalitat. Els models de llenguatge no generen atzar real: en les proves, la tria s'ha concentrat en pocs perfils.",
+    ttDynamic: "A cada conversa nova, l'assistent tria el perfil del client entre els nivells que deixis en «Aleatori». El cas es manté igual.",
+    bannerDynamic: "<strong>Experimental.</strong> Els eixos en «Aleatori» canvien a cada conversa. Els models de llenguatge no generen atzar real: en les proves, la tria s'ha concentrat en pocs perfils.",
+    segRandom: "Aleatori",
+    descRandom: "Canvia a cada conversa entre els {n} nivells.",
+    noteE6Warn: "Avisa abans els estudiants: el client pot mostrar un biaix de gènere simulat.",
+    lblRandomIdentity: "Nom i càrrec aleatoris",
+    ttRandomIdentity: "L'assistent s'inventa una persona diferent a cada conversa. Desactiva-ho per mantenir sempre el mateix nom i càrrec.",
+    lblAreas: "Àrees on pot treballar el client:",
+    lblAreasHint: "(Per defecte: totes)",
+    ttGear: "Editar el text d'aquest eix",
+    ttGearEdited: "Editar el text d'aquest eix (modificat)",
+    edIntro: "Aquest és el text que l'eix aporta al prompt. Els canvis només afecten aquest client i es desen al JSON.",
+    edHeader: "Descripció general de l'eix",
+    edBehaviour: "Conducta del client",
+    edGuide: "Guia de maneig (només per a l'avaluació)",
+    edNorms: "Normes d'aplicació (nivells 2, 3 i 4)",
+    edReset: "Restaurar el text original",
+    edDone: "Fet",
+    edClose: "Tancar",
+    edConfirmReset: "Vols tornar al text original d'aquest eix?",
     btnRandomRole: "🎲 Aleatori",
     btnRandomCase: "🎲 Cas aleatori",
     ttRandomCase: "Omple el nom intern, l'empresa i la informació del cas amb un exemple de la Biblioteca de Projectes.",
@@ -1721,10 +1907,28 @@ const UI_LANGS = {
     secTraits: "Personaje y rasgos",
     btnRandomTraits: "🎲 Aleatorizar",
     lblAdvanced: "Modo avanzado",
-    ttAdvanced: "Añade el sesgo de género del cliente y un campo libre para escribir un rasgo propio. La perspectiva de género del estudiante (CT8) se evalúa siempre, con este modo o sin él.",
+    ttAdvanced: "Muestra un botón ⚙ en cada eje de personalidad para ver y editar el texto que aporta al prompt. Si lo desactivas, se vuelven a usar los textos originales.",
     lblDynamic: "Modo dinámico",
-    ttDynamic: "En cada conversación nueva, el asistente se inventa el nombre y el cargo del cliente y sortea todos los rasgos de personalidad. El caso se mantiene igual.",
-    bannerDynamic: "<strong>Modo experimental.</strong> En cada conversación nueva, el asistente se inventa la identidad del cliente (nombre y cargo) y sortea todos los rasgos de personalidad. Los modelos de lenguaje no generan azar real: en las pruebas, la elección se ha concentrado en pocos perfiles.",
+    ttDynamic: "En cada conversación nueva, el asistente elige el perfil del cliente entre los niveles que dejes en «Aleatorio». El caso se mantiene igual.",
+    bannerDynamic: "<strong>Experimental.</strong> Los ejes en «Aleatorio» cambian en cada conversación. Los modelos de lenguaje no generan azar real: en las pruebas, la elección se ha concentrado en pocos perfiles.",
+    segRandom: "Aleatorio",
+    descRandom: "Cambia en cada conversación entre los {n} niveles.",
+    noteE6Warn: "Avisa antes a los estudiantes: el cliente puede mostrar un sesgo de género simulado.",
+    lblRandomIdentity: "Nombre y cargo aleatorios",
+    ttRandomIdentity: "El asistente se inventa una persona distinta en cada conversación. Desactívalo para mantener siempre el mismo nombre y cargo.",
+    lblAreas: "Áreas en las que puede trabajar el cliente:",
+    lblAreasHint: "(Por defecto: todas)",
+    ttGear: "Editar el texto de este eje",
+    ttGearEdited: "Editar el texto de este eje (modificado)",
+    edIntro: "Este es el texto que el eje aporta al prompt (siempre en catalán). Los cambios solo afectan a este cliente y se guardan en el JSON.",
+    edHeader: "Descripción general del eje",
+    edBehaviour: "Conducta del cliente",
+    edGuide: "Guía de manejo (solo para la evaluación)",
+    edNorms: "Normas de aplicación (niveles 2, 3 y 4)",
+    edReset: "Restaurar el texto original",
+    edDone: "Hecho",
+    edClose: "Cerrar",
+    edConfirmReset: "¿Quieres volver al texto original de este eje?",
     btnRandomRole: "🎲 Aleatorio",
     btnRandomCase: "🎲 Caso aleatorio",
     ttRandomCase: "Rellena el nombre interno, la empresa y la información del caso con un ejemplo de la Biblioteca de Proyectos.",
@@ -1765,10 +1969,28 @@ const UI_LANGS = {
     secTraits: "Character and traits",
     btnRandomTraits: "🎲 Randomise",
     lblAdvanced: "Advanced mode",
-    ttAdvanced: "Adds the client's gender bias and a free-text field for a custom trait. The student's gender perspective (CT8) is always assessed, with or without this mode.",
+    ttAdvanced: "Shows a ⚙ button on each personality axis to view and edit the text it adds to the prompt. If you turn it off, the original texts are used again.",
     lblDynamic: "Dynamic mode",
-    ttDynamic: "In every new conversation, the assistant makes up the client's name and job title and draws all personality traits. The case stays the same.",
-    bannerDynamic: "<strong>Experimental mode.</strong> In every new conversation, the assistant makes up the client's identity (name and job title) and draws all personality traits. Language models don't generate true randomness: in testing, the choice clustered around a few profiles.",
+    ttDynamic: "In every new conversation, the assistant picks the client's profile from the levels you leave on «Random». The case stays the same.",
+    bannerDynamic: "<strong>Experimental.</strong> Axes set to «Random» change in every conversation. Language models don't generate true randomness: in testing, the choice clustered around a few profiles.",
+    segRandom: "Random",
+    descRandom: "Changes in every conversation among the {n} levels.",
+    noteE6Warn: "Warn students beforehand: the client may show a simulated gender bias.",
+    lblRandomIdentity: "Random name and job title",
+    ttRandomIdentity: "The assistant makes up a different person in every conversation. Turn it off to keep the same name and job title.",
+    lblAreas: "Areas the client may work in:",
+    lblAreasHint: "(Default: all)",
+    ttGear: "Edit this axis's text",
+    ttGearEdited: "Edit this axis's text (modified)",
+    edIntro: "This is the text the axis adds to the prompt (always in Catalan). Changes only affect this client and are saved in the JSON.",
+    edHeader: "General description of the axis",
+    edBehaviour: "Client behaviour",
+    edGuide: "Handling guide (assessment only)",
+    edNorms: "Application rules (levels 2, 3 and 4)",
+    edReset: "Restore original text",
+    edDone: "Done",
+    edClose: "Close",
+    edConfirmReset: "Do you want to go back to the original text for this axis?",
     btnRandomRole: "🎲 Random",
     btnRandomCase: "🎲 Random case",
     ttRandomCase: "Fills in the internal name, company and case information with an example from the Project Library.",
@@ -1935,7 +2157,9 @@ const GUIA_CAS = {
 <script>
 let currentLang = "cat";
 let promptFontSize = 0.82;
-const estat = { sel: {} };
+const estat = { sel: {}, dinSel: {}, arees: [], perso: {} };
+const ALEATORI = "aleatori";
+let eixEditor = null;
 let firmaTrets = "";
 
 /* ===== Utilitats ===== */
@@ -1943,13 +2167,89 @@ const $ = id => document.getElementById(id);
 const t = () => UI_LANGS[currentLang];
 const esDinamic = () => $("dynamicProfile").checked;
 const esAvancat = () => $("advancedMode").checked;
+const identitatAleatoria = () => esDinamic() && $("randomIdentity").checked;
 const tret = id => ATRIBUTS.find(a => a.id === id);
 const opcio = (attrId, optId) => { const a = tret(attrId); return a ? a.opcions.find(o => o.id === optId) : undefined; };
 
-/* Trets que es mostren i s'injecten segons el mode */
+/* Trets actius (tots es mostren a la interfície) */
 function tretsVisibles() {
-  return ATRIBUTS.filter(a => a.actiu && (!a.avancat || esAvancat()));
+  return ATRIBUTS.filter(a => a.actiu);
 }
+
+/* Selecció del mode dinàmic: cada eix és «aleatori» o té un nivell fix.
+   Per defecte, tots aleatoris menys l'E6, que es queda en Neutral. */
+function dinPerDefecte() {
+  const s = {};
+  ATRIBUTS.forEach(a => { s[a.id] = a.eix === "E6" ? a.defecte : ALEATORI; });
+  return s;
+}
+
+function normalitzarDin(s) {
+  const out = dinPerDefecte();
+  if (s && typeof s === "object") {
+    ATRIBUTS.forEach(a => { if (s[a.id] === ALEATORI || opcio(a.id, s[a.id])) out[a.id] = s[a.id]; });
+  }
+  return out;
+}
+
+const selActual = () => esDinamic() ? estat.dinSel : estat.sel;
+const esAleatori = a => esDinamic() && estat.dinSel[a.id] === ALEATORI;
+
+/* Nivell fix de l'eix (0 = primer nivell) */
+function nivellFix(a) {
+  return Math.max(0, a.opcions.findIndex(o => o.id === selActual()[a.id]));
+}
+
+/* L'E6 només s'escriu al prompt si hi pot haver biaix (aleatori o un nivell diferent de Neutral) */
+const eixAlPrompt = a => a.eix !== "E6" || esAleatori(a) || nivellFix(a) > 0;
+const eixosPrompt = () => tretsVisibles().filter(eixAlPrompt);
+const perfilDinamic = () => eixosPrompt().some(esAleatori);
+
+/* Textos de l'eix: els originals o, amb el mode avançat, els editats pel docent */
+function perso(a) {
+  return esAvancat() ? estat.perso[a.id] || null : null;
+}
+function textCapcalera(a) {
+  const p = perso(a);
+  return p && typeof p.capcalera === "string" ? p.capcalera : a.capcalera;
+}
+function textOpcio(a, o, camp) {
+  const p = perso(a);
+  const v = p && p.opcions && p.opcions[o.id] ? p.opcions[o.id][camp] : undefined;
+  return typeof v === "string" ? v : o[camp];
+}
+function textNormesE6(a) {
+  const p = perso(a);
+  return p && typeof p.normes === "string" ? p.normes : P_NORMES_E6;
+}
+const eixEditat = id => !!estat.perso[id] && Object.keys(estat.perso[id]).length > 0;
+
+/* Només es desen els camps que existeixen i són text */
+function normalitzarPerso(p) {
+  const out = {};
+  if (!p || typeof p !== "object") return out;
+  ATRIBUTS.forEach(a => {
+    const e = p[a.id];
+    if (!e || typeof e !== "object") return;
+    const net = {};
+    if (typeof e.capcalera === "string") net.capcalera = e.capcalera;
+    if (a.eix === "E6" && typeof e.normes === "string") net.normes = e.normes;
+    if (e.opcions && typeof e.opcions === "object") {
+      a.opcions.forEach(o => {
+        const v = e.opcions[o.id];
+        if (!v || typeof v !== "object") return;
+        const nv = {};
+        if (typeof v.prompt === "string") nv.prompt = v.prompt;
+        if (typeof v.guia === "string") nv.guia = v.guia;
+        if (Object.keys(nv).length) (net.opcions = net.opcions || {})[o.id] = nv;
+      });
+    }
+    if (Object.keys(net).length) out[a.id] = net;
+  });
+  return out;
+}
+
+const totesLesArees = () => AREES.map(a => a.id);
 
 /* Substitució en un sol pas (el text de l'usuari no es torna a processar) */
 function omplir(plantilla, valors) {
@@ -2022,7 +2322,7 @@ function reglaViolada(sel, attrId) {
 function selAleatoria() {
   for (let i = 0; i < 500; i++) {
     const s = { ...estat.sel };
-    tretsVisibles().forEach(a => { s[a.id] = a.opcions[rnd(a.opcions.length)].id; });
+    tretsVisibles().filter(a => a.eix !== "E6").forEach(a => { s[a.id] = a.opcions[rnd(a.opcions.length)].id; });
     if (!reglaViolada(s)) return s;
   }
   return selPerDefecte();
@@ -2059,6 +2359,7 @@ function aplicarTextosUI() {
     ui_tt_force_lang: x.ttForceLang, ui_sec_traits: x.secTraits, ui_btn_random_traits: x.btnRandomTraits,
     ui_lbl_advanced: x.lblAdvanced, ui_tt_advanced: x.ttAdvanced, ui_lbl_dynamic: x.lblDynamic,
     ui_tt_dynamic: x.ttDynamic, ui_btn_random_role: x.btnRandomRole, ui_btn_random_case: x.btnRandomCase,
+    ui_lbl_random_identity: x.lblRandomIdentity, ui_tt_random_identity: x.ttRandomIdentity, ui_lbl_areas: x.lblAreas, ui_lbl_areas_hint: x.lblAreasHint,
     ui_lbl_free: x.lblFree, ui_note_free: x.noteFree, ui_sec_case: x.secCase, ui_lbl_open: x.lblOpen,
     ui_lbl_hidden: x.lblHidden, ui_btn_download: x.btnDownload, ui_btn_import: x.btnImport,
     ui_btn_copy: x.btnCopy, ui_lbl_viewer_title: x.lblViewerTitle, ui_btn_preview: x.btnPreview
@@ -2070,6 +2371,7 @@ function aplicarTextosUI() {
   $("caseHelpBtn").title = GUIA_CAS[currentLang].ajuda;
   $("caseHelpBtn").setAttribute("aria-label", GUIA_CAS[currentLang].ajuda);
   if ($("guideOverlay").classList.contains("open")) renderGuiaCas();
+  if ($("editorOverlay").classList.contains("open")) renderEditor();
   $("ui_btn_view").textContent = $("promptViewerBox").style.display === "block" ? x.btnHideView : x.btnView;
   renderitzar();
 }
@@ -2082,18 +2384,26 @@ function plegar(id, plegat) {
 
 function renderitzar() {
   const din = esDinamic();
-  const adv = esAvancat();
+  const idAleatoria = identitatAleatoria();
 
   plegar("dynamicPanel", !din);
-  plegar("identityBlock", din);
-  plegar("traitsBlock", din);
-  plegar("freeTraitBox", !adv);
+  plegar("dynIdentityBlock", !din);
+  plegar("areasBlock", !idAleatoria);
+  plegar("identityBlock", idAleatoria);
+  $("traitsToolbar").classList.toggle("hidden", din);
+  $("traitsContainer").classList.toggle("dyn-traits", din);
 
+  renderArees();
   renderTrets();
   renderAvis();
   actualitzarComptador();
   refrescarVistes();
 }
+
+const ICONA_ENGRANATGE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
+
+/* Opcions de la fila: en mode dinàmic, «Aleatori» va primer */
+const opcionsFila = at => esDinamic() ? [{ id: ALEATORI }, ...at.opcions] : at.opcions;
 
 function crearFila(at) {
   const row = document.createElement("div");
@@ -2101,10 +2411,20 @@ function crearFila(at) {
   row.dataset.attr = at.id;
   const nom = document.createElement("div");
   nom.className = "trait-name";
-  nom.textContent = at.nom[currentLang];
+  const etiqueta = document.createElement("span");
+  etiqueta.textContent = at.nom[currentLang];
+  nom.appendChild(etiqueta);
+  if (esAvancat()) {
+    const g = document.createElement("button");
+    g.type = "button";
+    g.className = "gear-btn";
+    g.innerHTML = ICONA_ENGRANATGE;
+    g.addEventListener("click", () => obrirEditor(at.id));
+    nom.appendChild(g);
+  }
   const grid = document.createElement("div");
   grid.className = "seg-grid no-anim";
-  grid.style.setProperty("--n", at.opcions.length);
+  grid.style.setProperty("--n", opcionsFila(at).length);
   const indicador = document.createElement("span");
   indicador.className = "seg-indicator";
   indicador.setAttribute("aria-hidden", "true");
@@ -2118,7 +2438,7 @@ function crearFila(at) {
    Si no, actualitza les existents perquè l'indicador taronja pugui lliscar. */
 function renderTrets(forcar) {
   const cont = $("traitsContainer");
-  const firma = currentLang + "|" + tretsVisibles().map(a => a.id).join(",");
+  const firma = [currentLang, esDinamic(), esAvancat(), tretsVisibles().map(a => a.id).join(",")].join("|");
   if (!forcar && firma === firmaTrets && cont.children.length) { actualitzarTrets(); return; }
   firmaTrets = firma;
   cont.innerHTML = "";
@@ -2128,15 +2448,16 @@ function renderTrets(forcar) {
     grid.setAttribute("role", "group");
     grid.setAttribute("aria-label", at.nom[currentLang]);
 
-    at.opcions.forEach(o => {
+    opcionsFila(at).forEach(o => {
       const b = document.createElement("button");
       b.type = "button";
-      b.className = "seg-btn";
+      b.className = o.id === ALEATORI ? "seg-btn seg-random" : "seg-btn";
       b.dataset.opt = o.id;
-      b.textContent = o.nom[currentLang];
+      b.textContent = o.id === ALEATORI ? t().segRandom : o.nom[currentLang];
       b.addEventListener("click", () => {
-        if (b.getAttribute("aria-disabled") === "true" || estat.sel[at.id] === o.id) return;
-        estat.sel[at.id] = o.id;
+        const mapa = selActual();
+        if (b.getAttribute("aria-disabled") === "true" || mapa[at.id] === o.id) return;
+        mapa[at.id] = o.id;
         actualitzarTrets();
         renderAvis();
         refrescarVistes();
@@ -2157,19 +2478,47 @@ function renderTrets(forcar) {
   else reactivar();
 }
 
+/* Descripció que surt sota cada eix */
+function descripcioEix(at) {
+  const x = t();
+  const sel = selActual()[at.id];
+  let text = sel === ALEATORI
+    ? omplir(x.descRandom, { n: at.opcions.length })
+    : opcio(at.id, sel)?.descripcio[currentLang] || "";
+  if (at.eix === "E6" && eixAlPrompt(at)) text += " " + x.noteE6Warn;
+  return text;
+}
+
 function actualitzarTrets(inicial) {
   const cont = $("traitsContainer");
+  const din = esDinamic();
+  const mapa = selActual();
   tretsVisibles().forEach(at => {
     const row = cont.querySelector(`[data-attr="${at.id}"]`);
     if (!row) return;
-    const idx = Math.max(0, at.opcions.findIndex(o => o.id === estat.sel[at.id]));
-    row.querySelector(".seg-grid").style.setProperty("--i", idx);
+    const idx = Math.max(0, opcionsFila(at).findIndex(o => o.id === mapa[at.id]));
+    const grid = row.querySelector(".seg-grid");
+    grid.style.setProperty("--i", idx);
+    grid.classList.toggle("is-random", mapa[at.id] === ALEATORI);
+
+    const g = row.querySelector(".gear-btn");
+    if (g) {
+      const editat = eixEditat(at.id);
+      g.classList.toggle("edited", editat);
+      g.title = editat ? t().ttGearEdited : t().ttGear;
+      g.setAttribute("aria-label", `${g.title}: ${at.nom[currentLang]}`);
+    }
 
     row.querySelectorAll(".seg-btn").forEach(b => {
-      const o = opcio(at.id, b.dataset.opt);
-      const actiu = estat.sel[at.id] === o.id;
+      const id = b.dataset.opt;
+      const actiu = mapa[at.id] === id;
       b.setAttribute("aria-pressed", actiu ? "true" : "false");
-      const regla = actiu ? null : reglaViolada({ ...estat.sel, [at.id]: o.id }, at.id);
+      if (id === ALEATORI) {
+        b.title = omplir(t().descRandom, { n: at.opcions.length });
+        return;
+      }
+      const o = opcio(at.id, id);
+      const regla = actiu || din ? null : reglaViolada({ ...estat.sel, [at.id]: o.id }, at.id);
       if (regla) {
         b.setAttribute("aria-disabled", "true");
         b.title = t().ttIncompat + regla.motiu[currentLang];
@@ -2180,13 +2529,148 @@ function actualitzarTrets(inicial) {
     });
 
     const desc = row.querySelector(".trait-desc");
-    const text = opcio(at.id, estat.sel[at.id])?.descripcio[currentLang] || "";
+    const text = descripcioEix(at);
     if (desc.textContent === text) return;
     if (inicial) { desc.textContent = text; return; }
     desc.classList.add("fade");
     clearTimeout(desc._t);
     desc._t = setTimeout(() => { desc.textContent = text; desc.classList.remove("fade"); }, 140);
   });
+}
+
+/* Si no n'hi ha cap de marcada, valen totes (com amb l'idioma) */
+function actualitzarNotaArees() {
+  $("ui_lbl_areas_hint").style.visibility = estat.arees.length ? "hidden" : "visible";
+}
+
+/* Àrees permeses quan el nom i el càrrec són aleatoris */
+function renderArees() {
+  const cont = $("areasContainer");
+  cont.innerHTML = "";
+  AREES.forEach(a => {
+    const l = document.createElement("label");
+    l.className = "lang-checkbox-label";
+    l.title = a.llista;
+    const c = document.createElement("input");
+    c.type = "checkbox";
+    c.checked = estat.arees.includes(a.id);
+    c.addEventListener("change", () => {
+      estat.arees = AREES.filter(x => (x.id === a.id ? c.checked : estat.arees.includes(x.id))).map(x => x.id);
+      actualitzarNotaArees();
+      refrescarVistes();
+    });
+    l.appendChild(c);
+    l.appendChild(document.createTextNode(a.nom[currentLang]));
+    cont.appendChild(l);
+  });
+  actualitzarNotaArees();
+}
+
+/* ===== Mode avançat: editor dels textos d'un eix ===== */
+function valorEditor(a, camp, optId) {
+  if (camp === "capcalera") return textCapcalera(a);
+  if (camp === "normes") return textNormesE6(a);
+  return textOpcio(a, opcio(a.id, optId), camp);
+}
+
+function valorOriginal(a, camp, optId) {
+  if (camp === "capcalera") return a.capcalera;
+  if (camp === "normes") return P_NORMES_E6;
+  return opcio(a.id, optId)[camp];
+}
+
+/* Desa només el que difereix de l'original */
+function desarCampEditor(a, camp, optId, valor) {
+  const original = valorOriginal(a, camp, optId);
+  const p = estat.perso[a.id] || {};
+  if (camp === "capcalera" || camp === "normes") {
+    if (valor === original) delete p[camp]; else p[camp] = valor;
+  } else {
+    const ops = p.opcions || {};
+    const o = ops[optId] || {};
+    if (valor === original) delete o[camp]; else o[camp] = valor;
+    if (Object.keys(o).length) ops[optId] = o; else delete ops[optId];
+    if (Object.keys(ops).length) p.opcions = ops; else delete p.opcions;
+  }
+  if (Object.keys(p).length) estat.perso[a.id] = p; else delete estat.perso[a.id];
+  $("edReset").disabled = !eixEditat(a.id);
+  actualitzarTrets();
+  refrescarVistes();
+}
+
+function renderEditor() {
+  const a = tret(eixEditor);
+  if (!a) return;
+  const x = t();
+  $("edTitle").textContent = `${a.nom[currentLang]} (${a.eix})`;
+  $("edIntro").textContent = x.edIntro;
+  $("edReset").textContent = x.edReset;
+  $("edReset").disabled = !eixEditat(a.id);
+  $("edDone").textContent = x.edDone;
+  $("edClose").title = x.edClose;
+  $("edClose").setAttribute("aria-label", x.edClose);
+
+  const body = $("edBody");
+  body.innerHTML = "";
+  const seccio = titol => {
+    const sec = document.createElement("div");
+    sec.className = "ed-section";
+    if (titol) {
+      const h = document.createElement("h3");
+      h.textContent = titol;
+      sec.appendChild(h);
+    }
+    body.appendChild(sec);
+    return sec;
+  };
+  const camp = (sec, etiqueta, nomCamp, optId) => {
+    const id = `ed_${nomCamp}_${optId || "eix"}`;
+    const l = document.createElement("label");
+    l.className = "ed-label";
+    l.htmlFor = id;
+    l.textContent = etiqueta;
+    const ta = document.createElement("textarea");
+    ta.id = id;
+    ta.value = valorEditor(a, nomCamp, optId);
+    ta.rows = Math.min(14, Math.ceil(ta.value.length / 90) + 1);
+    ta.addEventListener("input", () => desarCampEditor(a, nomCamp, optId, ta.value));
+    sec.appendChild(l);
+    sec.appendChild(ta);
+  };
+
+  camp(seccio(""), x.edHeader, "capcalera");
+  a.opcions.forEach((o, k) => {
+    const sec = seccio(`${k + 1}. ${o.nom[currentLang]}`);
+    camp(sec, x.edBehaviour, "prompt", o.id);
+    camp(sec, x.edGuide, "guia", o.id);
+  });
+  if (a.eix === "E6") camp(seccio(x.edNorms), x.edNorms, "normes");
+}
+
+function obrirEditor(attrId) {
+  eixEditor = attrId;
+  renderEditor();
+  $("editorOverlay").classList.add("open");
+  document.body.classList.add("modal-open");
+  $("edBody").scrollTop = 0;
+  $("edClose").focus();
+}
+
+function tancarEditor() {
+  if (!$("editorOverlay").classList.contains("open")) return;
+  $("editorOverlay").classList.remove("open");
+  document.body.classList.remove("modal-open");
+  const g = $("traitsContainer").querySelector(`[data-attr="${eixEditor}"] .gear-btn`);
+  if (g) g.focus();
+}
+
+function restaurarEixEditor() {
+  const a = tret(eixEditor);
+  if (!a || !eixEditat(a.id) || !confirm(t().edConfirmReset)) return;
+  delete estat.perso[a.id];
+  renderEditor();
+  actualitzarTrets();
+  refrescarVistes();
 }
 
 function renderAvis() {
@@ -2350,11 +2834,17 @@ function nomOrganitzacio() {
   return e ? `«${e}»` : "l'organització que encarrega el projecte";
 }
 
+function textArees() {
+  let arees = AREES.filter(a => estat.arees.includes(a.id));
+  if (!arees.length) arees = AREES;
+  return arees.map(a => `   - *${a.prompt}:* ${a.llista}.`).join("\n");
+}
+
 function compilarIdentitat() {
   const nom = textNet($("charName").value);
   const carrec = textNet($("charRole").value);
-  if (esDinamic() || (!nom && !carrec)) {
-    return omplir(P_IDENTITAT_DINAMICA, { organitzacio: nomOrganitzacio(), abast: P_ABAST });
+  if (identitatAleatoria() || (!nom && !carrec)) {
+    return omplir(P_IDENTITAT_DINAMICA, { organitzacio: nomOrganitzacio(), abast: P_ABAST, arees: textArees() });
   }
   return omplir(P_IDENTITAT_FIXA, {
     organitzacio: nomOrganitzacio(),
@@ -2365,23 +2855,26 @@ function compilarIdentitat() {
 }
 
 function tretLliureActiu() {
-  return esAvancat() ? textNet($("freeTrait").value).slice(0, TRET_LLIURE.maxCaracters) : "";
+  return textNet($("freeTrait").value).slice(0, TRET_LLIURE.maxCaracters);
 }
 
-function ambE6() {
-  return tretsVisibles().some(a => a.eix === "E6");
-}
+/* L'E6 surt al prompt (i s'avalua H1) només si hi pot haver biaix */
+const ambE6 = () => eixosPrompt().some(a => a.eix === "E6");
 
-function e6ambBiaix() {
-  const a = tretsVisibles().find(x => x.eix === "E6");
-  if (!a) return false;
-  if (esDinamic()) return true;
-  return a.opcions.findIndex(o => o.id === estat.sel[a.id]) > 0;
+/* Frase de «Força la variabilitat», només amb els eixos que se sortegen */
+function textVariabilitat(aleatoris) {
+  const eixos = aleatoris.map(a => a.eix);
+  const valors = VARIABILITAT.favorits.filter(f => eixos.includes(f.eix)).map(f => `${f.eix}=${f.nivell}`);
+  if (!valors.length) return VARIABILITAT.generic;
+  const quatre = VARIABILITAT.quatreNivells.filter(e => eixos.includes(e)).map(e => `${e} (1, 2, 3, 4)`);
+  return omplir(VARIABILITAT.evita, { valors: llista(valors, "o") }) +
+    (quatre.length ? omplir(VARIABILITAT.explora, { eixos: llista(quatre, "i") }) : "");
 }
 
 function compilarPerfil() {
-  const eixos = tretsVisibles();
-  const din = esDinamic();
+  const eixos = eixosPrompt();
+  const aleatoris = eixos.filter(esAleatori);
+  const din = aleatoris.length > 0;
   const parts = [];
 
   parts.push(omplir(din ? P_PERFIL_INTRO_DINAMIC : P_PERFIL_INTRO_FIX, {
@@ -2391,10 +2884,25 @@ function compilarPerfil() {
 
   let num = 1;
   if (din) {
+    const fixos = eixos.filter(a => !esAleatori(a));
+    const rangs = llista(aleatoris.map(a => `${a.eix} 1–${a.opcions.length}`), "i");
+    const nivell = a => `${nivellFix(a) + 1} (${a.opcions[nivellFix(a)].etiqueta.replace(/\s*\(.*\)$/, "")})`;
+    let pas2 = omplir(P_SORTEIG_TOT, { rangs });
+    if (fixos.length) {
+      pas2 = omplir(P_SORTEIG_PARCIAL, {
+        rangs,
+        fixos: fixos.length === 1
+          ? omplir(P_FIX_UN, { eix: fixos[0].eix, nivell: nivell(fixos[0]) })
+          : omplir(P_FIX_DIVERSOS, { eixos: llista(fixos.map(a => a.eix), "i"), nivells: llista(fixos.map(a => `${a.eix} = ${nivell(a)}`), "i") }),
+        escriu: fixos.length === 1 ? P_ESCRIU_UN : P_ESCRIU_DIVERSOS,
+        exemple: eixos.map(a => esAleatori(a) ? "x" : nivellFix(a) + 1).join("-")
+      });
+    }
     parts.push(omplir(P_OBTENCIO, {
       format: eixos.map(a => a.eix).join("-"),
-      rangs: llista(eixos.map(a => `${a.eix} 1–${a.opcions.length}`), "i"),
-      variabilitat: ambE6() ? P_VARIABILITAT_AMB_E6 : P_VARIABILITAT_SENSE_E6
+      pas2,
+      quins: fixos.length ? P_QUINS_PARCIAL : P_QUINS_TOT,
+      variabilitat: textVariabilitat(aleatoris)
     }));
     num = 2;
   }
@@ -2405,16 +2913,16 @@ function compilarPerfil() {
   }));
 
   eixos.forEach(a => {
-    let bloc = `#### ${a.eix} — ${a.capcalera}\n\n`;
-    let nivell = 0;
-    if (din) {
-      bloc += a.opcions.map((o, k) => `${k + 1}. **${o.etiqueta}.** ${o.prompt} *(Guia: ${o.guia})*`).join("\n");
+    let bloc = `#### ${a.eix} — ${textCapcalera(a)}\n\n`;
+    if (esAleatori(a)) {
+      bloc += a.opcions.map((o, k) => `${k + 1}. **${o.etiqueta}.** ${textOpcio(a, o, "prompt")} *(Guia: ${textOpcio(a, o, "guia")})*`).join("\n");
     } else {
-      nivell = Math.max(0, a.opcions.findIndex(o => o.id === estat.sel[a.id]));
-      const o = a.opcions[nivell];
-      bloc += `Nivell assignat: **${nivell + 1}. ${o.etiqueta}.** ${o.prompt} *(Guia: ${o.guia})*`;
+      const k = nivellFix(a);
+      const o = a.opcions[k];
+      const titol = din ? P_NIVELL_FIX_DINAMIC : "Nivell assignat";
+      bloc += `${titol}: **${k + 1}. ${o.etiqueta}.** ${textOpcio(a, o, "prompt")} *(Guia: ${textOpcio(a, o, "guia")})*`;
     }
-    if (a.eix === "E6" && (din || nivell > 0)) bloc += "\n\n" + P_NORMES_E6;
+    if (a.eix === "E6") bloc += "\n\n" + textNormesE6(a);
     parts.push(bloc);
   });
 
@@ -2427,7 +2935,7 @@ function compilarPerfil() {
 }
 
 function compilarSystemPrompt() {
-  const din = esDinamic();
+  const din = perfilDinamic();
   return [
     P_FUNCIO,
     compilarIdioma(),
@@ -2441,7 +2949,7 @@ function compilarSystemPrompt() {
       comanda: COMANDA_AVALUACIO,
       liniaPerfilAval: din ? "no escrius la línia de perfil, " : "",
       notaE6: ambE6() ? "" : P_NOTA_SENSE_E6,
-      ...VARIANT_H[e6ambBiaix() ? "complet" : "simple"]
+      ...VARIANT_H[ambE6() ? "complet" : "simple"]
     })
   ].join("\n\n---\n\n");
 }
@@ -2464,9 +2972,11 @@ function generarEstructuraJSON() {
 
   return {
     name: nomAssistent,
-    description: din
-      ? `Client simulat (identitat i perfil dinàmics)${empresa ? ` · ${empresa}` : ""}`
-      : `Client simulat: ${nom}${empresa ? ` (${empresa})` : ""}`,
+    description: !din
+      ? `Client simulat: ${nom}${empresa ? ` (${empresa})` : ""}`
+      : identitatAleatoria()
+        ? `Client simulat (identitat i perfil dinàmics)${empresa ? ` · ${empresa}` : ""}`
+        : `Client simulat: ${nom}, perfil dinàmic${empresa ? ` (${empresa})` : ""}`,
     api_callback: callbackConfig,
     system_prompt: compilarSystemPrompt(),
     prompt_template: PLANTILLA_MISSATGE,
@@ -2487,7 +2997,11 @@ function generarEstructuraJSON() {
       forceLanguages: $("forceLanguages").checked,
       advancedMode: esAvancat(),
       dynamicProfile: din,
+      randomIdentity: $("randomIdentity").checked,
+      arees: [...estat.arees],
       trets: { ...estat.sel },
+      dinTrets: { ...estat.dinSel },
+      personalitzacio: JSON.parse(JSON.stringify(estat.perso)),
       tretLliure: textNet($("freeTrait").value),
       infoOberta: $("infoOberta").value,
       infoOculta: $("infoOculta").value
@@ -2585,8 +3099,21 @@ function importarDesDeConfig(c) {
   // Trets de versions anteriors amb ids diferents s'ignoren (queden els valors per defecte)
   estat.sel = normalitzarSel(c.trets);
   $("freeTrait").value = typeof c.tretLliure === "string" ? c.tretLliure.slice(0, TRET_LLIURE.maxCaracters) : "";
-  $("advancedMode").checked = !!c.advancedMode || !!(c.tretLliure && c.tretLliure.trim());
   $("dynamicProfile").checked = !!c.dynamicProfile;
+
+  if (c.dinTrets) {
+    // v0.5.3 o posterior
+    estat.dinSel = normalitzarDin(c.dinTrets);
+    $("randomIdentity").checked = c.randomIdentity !== false;
+    if (Array.isArray(c.arees)) estat.arees = AREES.filter(a => c.arees.includes(a.id)).map(a => a.id);
+    estat.perso = normalitzarPerso(c.personalitzacio);
+    $("advancedMode").checked = !!c.advancedMode;
+  } else if (c.advancedMode) {
+    // Fins a la v0.5.2, el mode avançat afegia l'E6 (en dinàmic, sortejat)
+    estat.dinSel.genere = ALEATORI;
+  } else {
+    estat.sel.genere = "neutral";
+  }
 }
 
 /* Prompt v0.4+ (estructura del prompt de referència, seccions «## 1.» a «## 9.») */
@@ -2615,18 +3142,28 @@ function importarDesDePromptV4(sp) {
   const font = (mPermesos ? mPermesos[1] : (mInici ? mInici[1] : "català")).toLowerCase();
   aplicarIdiomes(Object.keys(noms).filter(n => font.includes(n)).map(n => noms[n]));
 
+  // Eixos amb nivell fix (en dinàmic, la resta dels que surten al prompt són aleatoris)
   estat.sel = selPerDefecte();
-  if (!dinamic) {
-    [...sp.matchAll(/^#### (E\d) — [^\n]*\n\nNivell assignat: \*\*(\d+)\./gm)].forEach(m => {
+  const desti = dinamic ? estat.dinSel : estat.sel;
+  if (dinamic) {
+    [...sp.matchAll(/^#### (E\d) — /gm)].forEach(m => {
       const a = ATRIBUTS.find(x => x.eix === m[1]);
-      const o = a && a.opcions[Number(m[2]) - 1];
-      if (o) estat.sel[a.id] = o.id;
+      if (a) estat.dinSel[a.id] = ALEATORI;
     });
   }
+  [...sp.matchAll(/^#### (E\d) — [^\n]*\n\n(?:Nivell assignat|Nivell fix \(no se sorteja\)): \*\*(\d+)\./gm)].forEach(m => {
+    const a = ATRIBUTS.find(x => x.eix === m[1]);
+    const o = a && a.opcions[Number(m[2]) - 1];
+    if (o) desti[a.id] = o.id;
+  });
+
+  // Identitat aleatòria i àrees permeses
+  $("randomIdentity").checked = !mId;
+  const arees = AREES.filter(a => sp.includes(`*${a.prompt}:*`)).map(a => a.id);
+  if (arees.length) estat.arees = arees;
 
   const mLliure = sp.match(/^\*\*Tret addicional\*\* \(sempre actiu, sigui quin sigui el perfil\): (.+)$/m);
   $("freeTrait").value = mLliure ? mLliure[1].trim() : "";
-  $("advancedMode").checked = /^#### E6 — /m.test(sp) || !!mLliure;
 }
 
 function importarDesDePrompt(data) {
@@ -2691,7 +3228,8 @@ function importarDesDePrompt(data) {
   }
 
   $("freeTrait").value = lliure;
-  $("advancedMode").checked = avancat || !!lliure;
+  // En les versions antigues, l'E6 només hi era amb el mode avançat
+  if (dinamic && avancat) estat.dinSel.genere = ALEATORI;
 }
 
 function importarJson(event) {
@@ -2703,6 +3241,12 @@ function importarJson(event) {
     try {
       const data = JSON.parse(e.target.result);
       if (!data || (!data._config && !data.system_prompt)) throw new Error("Estructura no reconeguda");
+      // Valors per defecte de les opcions noves; la importació els sobreescriu si en té
+      estat.dinSel = dinPerDefecte();
+      estat.arees = totesLesArees();
+      estat.perso = {};
+      $("randomIdentity").checked = true;
+      $("advancedMode").checked = false;
       if (data._config) importarDesDeConfig(data._config);
       else importarDesDePrompt(data);
       renderitzar();
@@ -2717,9 +3261,24 @@ function importarJson(event) {
   reader.readAsText(file);
 }
 
+/* Els tooltips no poden sortir de la pantalla (sobretot al mòbil): si cal, es desplacen */
+function encabirTooltip(cont) {
+  const box = cont.querySelector(".tooltip-box");
+  if (!box) return;
+  box.style.transform = "";
+  const r = box.getBoundingClientRect();
+  const marge = 12;
+  let dx = 0;
+  if (r.right > window.innerWidth - marge) dx = window.innerWidth - marge - r.right;
+  if (r.left + dx < marge) dx = marge - r.left;
+  if (dx) box.style.transform = `translateX(${Math.round(dx)}px)`;
+}
+
 /* ===== Inici ===== */
 function inicialitzarUI() {
   estat.sel = selPerDefecte();
+  estat.dinSel = dinPerDefecte();
+  estat.arees = totesLesArees();
   carregarTemaPreferit();
   $("infoOberta").value = CAS_PER_DEFECTE.infoOberta;
   $("infoOculta").value = CAS_PER_DEFECTE.infoOculta;
@@ -2729,7 +3288,12 @@ function inicialitzarUI() {
   $("freeTrait").addEventListener("input", () => { actualitzarComptador(); refrescarVistes(); });
   ["lang_cat", "lang_es", "lang_en", "forceLanguages"].forEach(id => $(id).addEventListener("change", () => { actualitzarNotaLlengua(); refrescarVistes(); }));
   ["advancedMode", "dynamicProfile"].forEach(id => $(id).addEventListener("change", canviMode));
-  document.addEventListener("keydown", e => { if (e.key === "Escape") tancarGuiaCas(); });
+  $("randomIdentity").addEventListener("change", renderitzar);
+  document.querySelectorAll(".tooltip-container").forEach(c => {
+    c.addEventListener("mouseenter", () => encabirTooltip(c));
+    c.addEventListener("focusin", () => encabirTooltip(c));
+  });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") { tancarGuiaCas(); tancarEditor(); } });
 
   aplicarTextosUI();
   actualitzarNotaLlengua();
