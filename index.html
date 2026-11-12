@@ -29,7 +29,10 @@
     --random-glow: rgba(74, 158, 163, 0.35);
   }
 
+  html { color-scheme: dark; }
+  html:has(body.light-theme) { color-scheme: light; }
   body.light-theme {
+    color-scheme: light;
     --bg: #f6f5f0;
     --card-bg: #ffffff;
     --input-bg: #eeece4;
@@ -85,17 +88,42 @@
   .panels-body { padding: 22px 24px; }
   .panel { display: none; }
   .panel.active { display: block; }
-  .panel-title { font-size: 1.1rem; font-weight: 600; margin: 0 0 4px; }
-  .panel-intro { color: var(--text-secondary); font-size: 0.85rem; line-height: 1.45; margin: 0 0 20px; max-width: 68ch; }
   .sub-title { font-size: 0.95rem; font-weight: 600; margin: 0; }
   /* Pestanya Reunió: cada bloc amb el títol a l'esquerra i el seu interruptor a la dreta */
   .bloc-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
   .bloc-title { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); }
   .bloc-ctrl { margin: 0; }
+  /* v0.6.1: totes les pestanyes es fan amb el mateix bloc (títol a l'esquerra, control a la dreta) */
+  .panel > .bloc + .bloc, #meetingBox > .bloc, #evalCodeBox .bloc { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--border); }
+  .bloc-head-start { justify-content: flex-start; gap: 8px; }
+  .bloc-head .btn-sm { padding: 5px 12px; }
+  .bloc-head label.bloc-title, .bloc-head h3.bloc-title { margin: 0; }
+  .bloc .counter { font-weight: 400; }
+  .bloc textarea::placeholder, .bloc input::placeholder { color: var(--text-secondary); opacity: 0.75; }
+  .fitxa-fila .v.falta { color: var(--error); font-weight: 400; font-style: italic; }
+  .tab-nav { margin-left: auto; display: flex; align-items: center; gap: 4px; padding-left: 12px; }
+  .tab-arrow {
+    width: 30px; height: 30px; padding: 0; border-radius: 8px; border: 1px solid var(--border);
+    display: inline-flex; align-items: center; justify-content: center;
+    background: none; color: var(--text-primary); cursor: pointer;
+  }
+  .tab-arrow:hover:not(:disabled) { border-color: var(--border-focus); }
+  .tab-arrow:disabled { opacity: 0.35; cursor: default; }
+  .tab-arrow:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 1px; }
+  @keyframes sacseig {
+    0%, 100% { transform: translateX(0); }
+    15% { transform: translateX(-5px); } 30% { transform: translateX(5px); }
+    45% { transform: translateX(-3px); } 60% { transform: translateX(3px); } 75% { transform: translateX(-1px); }
+  }
+  @keyframes resplendor { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 30% { box-shadow: 0 0 0 4px var(--random-glow); } }
+  .switch-row.sacseig { animation: sacseig 0.6s ease; }
+  .switch-row.sacseig .track { animation: resplendor 1.2s ease; border-radius: 999px; }
+  @media (prefers-reduced-motion: reduce) { .switch-row.sacseig { animation: none; } }
+  @media (max-width: 600px) { .tab-nav { display: none; } }
   #evalCode { max-width: 260px; }
   .field-note.avis { color: var(--error); }
-  .bloc-reunio .lang-checkbox-group { margin: 0; }
-  .bloc-reunio .meeting-nums { margin-top: 0; }
+  .bloc .lang-checkbox-group { margin: 0; }
+  .bloc .meeting-nums { margin-top: 0; }
   .toolbar-modes { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
   #tab-comportament #dynamicPanel .dynamic-banner { margin: 0 0 16px; }
   #tab-projecte #infoOberta { min-height: 120px; }
@@ -758,6 +786,9 @@
   }
   .ed-foot .btn { width: auto; padding: 8px 16px; font-size: 0.82rem; }
   .ed-foot .btn:disabled { opacity: 0.45; cursor: default; }
+  .fitxa-export .btn:disabled { opacity: 0.45; cursor: not-allowed; filter: saturate(0.6); }
+  .fitxa-avis { margin: 0; font-size: 0.78rem; line-height: 1.4; color: var(--error); }
+  .fitxa-avis button { background: none; border: none; padding: 0; font: inherit; color: inherit; text-decoration: underline; cursor: pointer; }
 
   @media (max-width: 720px) {
     .logo { width: 44px; height: 44px; }
@@ -797,17 +828,6 @@
     <div class="toolbar-modes">
       <div class="switch-row">
         <label class="switch">
-          <input type="checkbox" id="dynamicProfile">
-          <span class="track"></span>
-          <span id="ui_lbl_dynamic"></span>
-        </label>
-        <div class="tooltip-container">
-          <span class="tooltip-icon" tabindex="0">?</span>
-          <div class="tooltip-box tt-right" id="ui_tt_dynamic"></div>
-        </div>
-      </div>
-      <div class="switch-row">
-        <label class="switch">
           <input type="checkbox" id="advancedMode">
           <span class="track"></span>
           <span id="ui_lbl_advanced"></span>
@@ -830,55 +850,56 @@
           <button class="tab" role="tab" id="tabbtn-client" data-tab="client" onclick="activarPestanya('client')"></button>
           <button class="tab" role="tab" id="tabbtn-comportament" data-tab="comportament" onclick="activarPestanya('comportament')"></button>
           <button class="tab" role="tab" id="tabbtn-reunio" data-tab="reunio" onclick="activarPestanya('reunio')"></button>
+          <div class="tab-nav">
+            <button type="button" class="tab-arrow" id="tabPrev" onclick="pestanyaVeina(-1)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+            <button type="button" class="tab-arrow" id="tabNext" onclick="pestanyaVeina(1)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+          </div>
         </nav>
         <div class="panels-body">
       <section class="panel" id="tab-projecte" role="tabpanel" aria-labelledby="tabbtn-projecte">
-        <h2 class="panel-title" id="ui_tab_projecte_title"></h2>
-        <p class="panel-intro" id="ui_tab_projecte_intro"></p>
-    <label class="field" for="companyName" id="ui_lbl_company"></label>
-    <input type="text" id="companyName" value="Hospital Comarcal de l'Alt Vallès">
-
-    <div class="card-title-row">
-      <h3 class="sub-title" id="ui_sec_case"></h3>
-      <button type="button" class="help-btn" id="caseHelpBtn" onclick="obrirGuiaCas()" aria-haspopup="dialog">?</button>
-      <button type="button" class="btn btn-secondary case-random-btn" id="ui_btn_random_case" onclick="casAleatori()"></button>
-    </div>
-    <label class="field" for="infoOberta" id="ui_lbl_open"></label>
-    <textarea id="infoOberta"></textarea>
-    <label class="field" for="infoOculta" id="ui_lbl_hidden"></label>
-    <textarea id="infoOculta"></textarea>
+        <div class="bloc">
+          <div class="bloc-head">
+            <label class="bloc-title" for="companyName" id="ui_lbl_company"></label>
+            <button type="button" class="btn btn-secondary btn-sm" id="ui_btn_random_case" onclick="casAleatori()"></button>
+          </div>
+          <input type="text" id="companyName" value="">
+        </div>
+        <div class="bloc">
+          <div class="bloc-head bloc-head-start">
+            <h3 class="bloc-title" id="ui_sec_case"></h3>
+            <button type="button" class="help-btn" id="caseHelpBtn" onclick="obrirGuiaCas()" aria-haspopup="dialog">?</button>
+          </div>
+          <label class="field" for="infoOberta" id="ui_lbl_open"></label>
+          <textarea id="infoOberta"></textarea>
+          <label class="field" for="infoOculta" id="ui_lbl_hidden"></label>
+          <textarea id="infoOculta"></textarea>
+        </div>
       </section>
       <section class="panel" id="tab-client" role="tabpanel" aria-labelledby="tabbtn-client">
-        <h2 class="panel-title" id="ui_tab_client_title"></h2>
-        <p class="panel-intro" id="ui_tab_client_intro"></p>
-    <!-- Mode dinàmic: identitat aleatòria i àrees permeses -->
-    <div id="dynIdentityBlock" class="collapsible collapsed">
-      <div class="collapsible-inner">
-        <div class="dyn-identity">
-          <div class="switch-row">
-            <label class="switch">
-              <input type="checkbox" id="randomIdentity" checked>
-              <span class="track"></span>
-              <span id="ui_lbl_random_identity"></span>
-            </label>
-            <div class="tooltip-container">
-              <span class="tooltip-icon" tabindex="0">?</span>
-              <div class="tooltip-box tt-right" id="ui_tt_random_identity"></div>
+        <div class="bloc">
+          <div class="bloc-head">
+            <span class="bloc-title" id="ui_titol_identitat"></span>
+            <div class="switch-row bloc-ctrl">
+              <label class="switch">
+                <input type="checkbox" id="randomIdentity">
+                <span class="track"></span>
+                <span id="ui_lbl_random_identity"></span>
+              </label>
+              <div class="tooltip-container">
+                <span class="tooltip-icon" tabindex="0">?</span>
+                <div class="tooltip-box" id="ui_tt_random_identity"></div>
+              </div>
             </div>
           </div>
-          <div id="areasBlock" class="collapsible">
-            <div class="collapsible-inner">
-              <div class="areas-head">
-                <p class="areas-label" id="ui_lbl_areas"></p>
-                <span class="lang-default-note" id="ui_lbl_areas_hint"></span>
-              </div>
-              <div class="area-group" id="areasContainer"></div>
+        <div id="areasBlock" class="collapsible">
+          <div class="collapsible-inner">
+            <div class="areas-head">
+              <p class="areas-label" id="ui_lbl_areas"></p>
+              <span class="lang-default-note" id="ui_lbl_areas_hint"></span>
             </div>
+            <div class="area-group" id="areasContainer"></div>
           </div>
         </div>
-      </div>
-    </div>
-
     <!-- Identitat fixa (en mode dinàmic, només si el nom i el càrrec no són aleatoris) -->
     <div id="identityBlock" class="collapsible">
       <div class="collapsible-inner">
@@ -896,47 +917,41 @@
         <div class="field-note" id="ui_note_role"></div>
       </div>
     </div>
-
+        </div>
       </section>
       <section class="panel" id="tab-comportament" role="tabpanel" aria-labelledby="tabbtn-comportament">
-        <h2 class="panel-title" id="ui_tab_comportament_title"></h2>
-        <p class="panel-intro" id="ui_tab_comportament_intro"></p>
-    <!-- Mode dinàmic: avís -->
-    <div id="dynamicPanel" class="collapsible collapsed">
-      <div class="collapsible-inner">
-        <div class="dynamic-banner" id="ui_banner_dynamic"></div>
-      </div>
-    </div>
-
-    <!-- Trets. En mode dinàmic, cada eix pot ser aleatori o tenir un nivell fix -->
-    <div id="traitsBlock">
-      <div>
-        <div class="traits-toolbar" id="traitsToolbar">
-          <button class="btn btn-secondary" id="ui_btn_random_traits" onclick="randomitzarTrets()"></button>
+        <div class="bloc">
+          <div class="bloc-head">
+            <span class="bloc-title" id="ui_titol_eixos"></span>
+            <div class="switch-row bloc-ctrl">
+              <label class="switch">
+                <input type="checkbox" id="dynamicProfile">
+                <span class="track"></span>
+                <span id="ui_lbl_dynamic"></span>
+              </label>
+              <div class="tooltip-container">
+                <span class="tooltip-icon" tabindex="0">?</span>
+                <div class="tooltip-box" id="ui_tt_dynamic"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Trets. Amb la personalitat dinàmica, cada eix pot ser aleatori o tenir un nivell fix -->
+          <div id="traitsBlock">
+            <div id="traitsContainer"></div>
+            <div id="traitsWarning" class="warning"></div>
+          </div>
         </div>
-        <div id="traitsContainer"></div>
-        <div id="traitsWarning" class="warning"></div>
-      </div>
-    </div>
-
-    <!-- Tret lliure (opcional) -->
-    <div id="freeTraitBox">
-      <div>
-        <div class="free-trait">
-          <div class="free-head">
-            <label class="field" for="freeTrait" id="ui_lbl_free"></label>
+        <div class="bloc" id="freeTraitBox">
+          <div class="bloc-head">
+            <label class="bloc-title" for="freeTrait" id="ui_lbl_free"></label>
             <span class="counter" id="freeCount"></span>
           </div>
           <textarea id="freeTrait" rows="2"></textarea>
           <div class="field-note" id="ui_note_free"></div>
         </div>
-      </div>
-    </div>
       </section>
       <section class="panel" id="tab-reunio" role="tabpanel" aria-labelledby="tabbtn-reunio">
-        <h2 class="panel-title" id="ui_tab_reunio_title"></h2>
-        <p class="panel-intro" id="ui_tab_reunio_intro"></p>
-        <div class="bloc-reunio">
+        <div class="bloc">
           <div class="bloc-head">
             <span class="bloc-title" id="ui_lbl_agent_langs"></span>
             <div class="switch-row bloc-ctrl">
@@ -960,7 +975,7 @@
         </div>
 
         <div id="meetingBox">
-          <div class="bloc-reunio meeting-box">
+          <div class="bloc">
             <div class="bloc-head">
               <span class="bloc-title" id="ui_lbl_meeting"></span>
               <div class="switch-row bloc-ctrl">
@@ -986,7 +1001,7 @@
 
         <div id="evalCodeBox" class="collapsible collapsed">
           <div class="collapsible-inner">
-            <div class="bloc-reunio meeting-box">
+            <div class="bloc">
               <div class="bloc-head">
                 <label class="bloc-title" for="evalCode" id="ui_lbl_eval_code"></label>
               </div>
@@ -1006,8 +1021,9 @@
         <div id="fitxaResum"></div>
         <div class="fitxa-export">
           <label class="field" for="assistantName" id="ui_lbl_assistant"></label>
-    <input type="text" id="assistantName" value="client_hospital">
+    <input type="text" id="assistantName" value="">
 
+          <p class="fitxa-avis" id="fitxaAvis" hidden></p>
           <button class="btn btn-primary" id="ui_btn_download" onclick="descarregarJson()"></button>
           <div class="btn-group-row">
             <button class="btn btn-secondary" id="ui_btn_copy" onclick="copiarPrompt()"></button>
@@ -1081,7 +1097,7 @@
      Es pot modificar sense tocar la lògica (bloc de sota).
      ========================================================================= -->
 <script>
-const VERSIO = "v0.6";
+const VERSIO = "v0.6.1";
 
 /* Model que LAMB farà servir per a l'assistent (clau "llm" de les metadades).
    Ha de coincidir exactament amb un model habilitat a l'organització de LAMB;
@@ -2022,14 +2038,14 @@ const UI_LANGS = {
     btnRandomTraits: "🎲 Aleatoritzar",
     lblAdvanced: "Mode avançat",
     ttAdvanced: "Mostra un botó ⚙ a cada eix de personalitat per veure i editar el text que aporta al prompt. Si el desactives, es tornen a fer servir els textos originals.",
-    lblDynamic: "Mode dinàmic",
-    ttDynamic: "A cada conversa nova, l'assistent tria el perfil del client entre els nivells que deixis en «Aleatori». El cas es manté igual.",
-    bannerDynamic: "Els eixos en «Aleatori» canvien a cada conversa. El model sorteja els nivells amb una llavor de dígits: en les proves (v0.5.4), els nivells han sortit repartits i el perfil es manté durant tota la conversa.",
+    lblDynamic: "Personalitat dinàmica",
+    ttDynamic: "A cada conversa nova, l'assistent sorteja els eixos que deixis en «Aleatori». Els altres eixos, el nom i el cas es mantenen.",
+    bannerDynamic: "Els eixos en «Aleatori» canvien a cada conversa.",
     segRandom: "Aleatori",
     descRandom: "Canvia a cada conversa entre els {n} nivells.",
     noteE6Warn: "Avisa abans els estudiants: el client pot mostrar un biaix de gènere simulat.",
-    lblRandomIdentity: "Nom i càrrec aleatoris",
-    ttRandomIdentity: "L'assistent s'inventa una persona diferent a cada conversa. Desactiva-ho per mantenir sempre el mateix nom i càrrec.",
+    lblRandomIdentity: "Client dinàmic",
+    ttRandomIdentity: "L'assistent s'inventa una persona diferent a cada conversa, d'una de les àrees que marquis. La personalitat no canvia si no actives també «Personalitat dinàmica».",
     lblAreas: "Àrees on pot treballar el client:",
     lblAreasHint: "(Per defecte: totes)",
     ttGear: "Editar el text d'aquest eix",
@@ -2063,8 +2079,8 @@ const UI_LANGS = {
     lblHidden: "Informació oculta i custodiada (només si pregunten correctament)",
     btnDownload: "Descarregar arxiu .json",
     btnImport: "Importar arxiu .json",
-    btnCopy: "Copiar Prompt",
-    btnView: "Veure Prompt",
+    btnCopy: "Copiar prompt",
+    btnView: "Veure prompt",
     btnHideView: "Ocultar Prompt",
     lblViewerTitle: "Prompt de sistema compilat",
     btnPreview: "Previsualitzar estructura JSON",
@@ -2091,14 +2107,14 @@ const UI_LANGS = {
     btnRandomTraits: "🎲 Aleatorizar",
     lblAdvanced: "Modo avanzado",
     ttAdvanced: "Muestra un botón ⚙ en cada eje de personalidad para ver y editar el texto que aporta al prompt. Si lo desactivas, se vuelven a usar los textos originales.",
-    lblDynamic: "Modo dinámico",
-    ttDynamic: "En cada conversación nueva, el asistente elige el perfil del cliente entre los niveles que dejes en «Aleatorio». El caso se mantiene igual.",
-    bannerDynamic: "Los ejes en «Aleatorio» cambian en cada conversación. El modelo sortea los niveles con una semilla de dígitos: en las pruebas (v0.5.4), los niveles han salido repartidos y el perfil se mantiene durante toda la conversación.",
+    lblDynamic: "Personalidad dinámica",
+    ttDynamic: "En cada conversación nueva, el asistente sortea los ejes que dejes en «Aleatorio». Los demás ejes, el nombre y el caso se mantienen.",
+    bannerDynamic: "Los ejes en «Aleatorio» cambian en cada conversación.",
     segRandom: "Aleatorio",
     descRandom: "Cambia en cada conversación entre los {n} niveles.",
     noteE6Warn: "Avisa antes a los estudiantes: el cliente puede mostrar un sesgo de género simulado.",
-    lblRandomIdentity: "Nombre y cargo aleatorios",
-    ttRandomIdentity: "El asistente se inventa una persona distinta en cada conversación. Desactívalo para mantener siempre el mismo nombre y cargo.",
+    lblRandomIdentity: "Cliente dinámico",
+    ttRandomIdentity: "El asistente se inventa una persona distinta en cada conversación, de una de las áreas que marques. La personalidad no cambia si no activas también «Personalidad dinámica».",
     lblAreas: "Áreas en las que puede trabajar el cliente:",
     lblAreasHint: "(Por defecto: todas)",
     ttGear: "Editar el texto de este eje",
@@ -2132,8 +2148,8 @@ const UI_LANGS = {
     lblHidden: "Información oculta y custodiada (solo si preguntan correctamente)",
     btnDownload: "Descargar archivo .json",
     btnImport: "Importar archivo .json",
-    btnCopy: "Copiar Prompt",
-    btnView: "Ver Prompt",
+    btnCopy: "Copiar prompt",
+    btnView: "Ver prompt",
     btnHideView: "Ocultar Prompt",
     lblViewerTitle: "Prompt de sistema compilado",
     btnPreview: "Previsualizar estructura JSON",
@@ -2160,14 +2176,14 @@ const UI_LANGS = {
     btnRandomTraits: "🎲 Randomise",
     lblAdvanced: "Advanced mode",
     ttAdvanced: "Shows a ⚙ button on each personality axis to view and edit the text it adds to the prompt. If you turn it off, the original texts are used again.",
-    lblDynamic: "Dynamic mode",
-    ttDynamic: "In every new conversation, the assistant picks the client's profile from the levels you leave on «Random». The case stays the same.",
-    bannerDynamic: "Axes set to «Random» change in every conversation. The model draws the levels from a seed of digits: in testing (v0.5.4), levels came out evenly spread and the profile held for the whole conversation.",
+    lblDynamic: "Dynamic personality",
+    ttDynamic: "In every new conversation, the assistant draws the axes you leave on «Random». The other axes, the name and the case stay the same.",
+    bannerDynamic: "Axes set to «Random» change in every conversation.",
     segRandom: "Random",
     descRandom: "Changes in every conversation among the {n} levels.",
     noteE6Warn: "Warn students beforehand: the client may show a simulated gender bias.",
-    lblRandomIdentity: "Random name and job title",
-    ttRandomIdentity: "The assistant makes up a different person in every conversation. Turn it off to keep the same name and job title.",
+    lblRandomIdentity: "Dynamic client",
+    ttRandomIdentity: "The assistant makes up a different person in every conversation, from one of the areas you tick. The personality only changes if «Dynamic personality» is also on.",
     lblAreas: "Areas the client may work in:",
     lblAreasHint: "(Default: all)",
     ttGear: "Edit this axis's text",
@@ -2201,8 +2217,8 @@ const UI_LANGS = {
     lblHidden: "Hidden, guarded information (only if asked correctly)",
     btnDownload: "Download .json file",
     btnImport: "Import .json file",
-    btnCopy: "Copy Prompt",
-    btnView: "View Prompt",
+    btnCopy: "Copy prompt",
+    btnView: "View prompt",
     btnHideView: "Hide Prompt",
     lblViewerTitle: "Compiled system prompt",
     btnPreview: "Preview JSON structure",
@@ -2367,7 +2383,7 @@ const $ = id => document.getElementById(id);
 const t = () => UI_LANGS[currentLang];
 const esDinamic = () => $("dynamicProfile").checked;
 const esAvancat = () => $("advancedMode").checked;
-const identitatAleatoria = () => esDinamic() && $("randomIdentity").checked;
+const identitatAleatoria = () => $("randomIdentity").checked;   // v0.6.1: «Client dinàmic», independent de la personalitat
 const tret = id => ATRIBUTS.find(a => a.id === id);
 const opcio = (attrId, optId) => { const a = tret(attrId); return a ? a.opcions.find(o => o.id === optId) : undefined; };
 
@@ -2563,7 +2579,7 @@ function aplicarTextosUI() {
     ui_subtitle: x.subtitle, ui_lbl_assistant: x.lblAssistant,
     ui_lbl_charname: x.lblCharName, ui_btn_random_name: x.btnRandomName, ui_lbl_charrole: x.lblCharRole, ui_lbl_company: x.lblCompany, ui_note_role: x.noteRole,
     ui_lbl_agent_langs: x.lblAgentLangs, ui_lbl_lang_hint: x.lblLangHint, ui_lbl_force_lang: x.lblForceLang,
-    ui_tt_force_lang: x.ttForceLang, ui_btn_random_traits: x.btnRandomTraits,
+    ui_tt_force_lang: x.ttForceLang,
     ui_lbl_advanced: x.lblAdvanced, ui_tt_advanced: x.ttAdvanced, ui_lbl_dynamic: x.lblDynamic,
     ui_tt_dynamic: x.ttDynamic, ui_btn_random_role: x.btnRandomRole, ui_btn_random_case: x.btnRandomCase,
     ui_lbl_random_identity: x.lblRandomIdentity, ui_tt_random_identity: x.ttRandomIdentity, ui_lbl_areas: x.lblAreas, ui_lbl_areas_hint: x.lblAreasHint,
@@ -2575,7 +2591,6 @@ function aplicarTextosUI() {
   for (const id in textos) $(id).textContent = textos[id];
   $("ui_btn_random_case").title = x.ttRandomCase;
   $("ui_title").innerHTML = `${x.title} <span class="badge">${VERSIO}</span>`;
-  $("ui_banner_dynamic").innerHTML = x.bannerDynamic;
   $("caseHelpBtn").title = GUIA_CAS[currentLang].ajuda;
   $("caseHelpBtn").setAttribute("aria-label", GUIA_CAS[currentLang].ajuda);
   if ($("guideOverlay").classList.contains("open")) renderGuiaCas();
@@ -2615,11 +2630,9 @@ function renderitzar() {
   const din = esDinamic();
   const idAleatoria = identitatAleatoria();
 
-  plegar("dynamicPanel", !din);
-  plegar("dynIdentityBlock", !din);
   plegar("areasBlock", !idAleatoria);
   plegar("identityBlock", idAleatoria);
-  $("traitsToolbar").classList.toggle("hidden", din);
+
   $("traitsContainer").classList.toggle("dyn-traits", din);
 
   renderTancament();
@@ -3234,6 +3247,17 @@ const TEXTOS_V06 = {
     torns: (a, t) => `Avisa al torn ${a}, tanca al ${t}`, sensetorns: "Sense límit",
     nomFitxer: "Nom del fitxer i de l'assistent a LAMB", visorPrompt: "Prompt de sistema", visorJson: "Estructura JSON",
     notaIdioma: "Si no en marques cap, el client parla en català.",
+    titolIdentitat: "Identitat del client",
+    titolEixos: "Eixos de personalitat",
+    phEmpresa: "Per exemple: Hospital Comarcal de l'Alt Vallès",
+    phOberta: "Què sap l'alumne del projecte abans de començar l'entrevista.",
+    phOculta: "Un requisit per línia, començant amb un guió (-). El client només els revela si l'alumne pregunta bé.",
+    anterior: "Pestanya anterior", seguent: "Pestanya següent",
+    codiActivaAvancat: "Activa el mode avançat per canviar-lo",
+    fEmpresa: "l'empresa", fOberta: "la informació oberta", fOculta: "la informació oculta", i: "i",
+    falta: l => `Per descarregar el client, falta ${l}.`, anarProjecte: "Anar a Projecte",
+    infoClient: "Amb «Client dinàmic» activat, el nom i el càrrec canvien a cada conversa. Sense, el client és sempre la mateixa persona.",
+    infoComportament: "Amb «Personalitat dinàmica» activada, els eixos que deixis en «Aleatori» se sortegen a cada conversa.",
     codiTitol: "Codi per activar l'avaluació",
     codiNota: c => `Els alumnes han d'escriure «${c}» per veure l'avaluació. Recorda dir-los-ho.`,
     codiSenseNumero: "Recomanació: posa-hi algun número perquè ningú no l'escrigui per casualitat.",
@@ -3262,6 +3286,17 @@ const TEXTOS_V06 = {
     torns: (a, t) => `Avisa en el turno ${a}, cierra en el ${t}`, sensetorns: "Sin límite",
     nomFitxer: "Nombre del archivo y del asistente en LAMB", visorPrompt: "Prompt de sistema", visorJson: "Estructura JSON",
     notaIdioma: "Si no marcas ninguno, el cliente habla en catalán.",
+    titolIdentitat: "Identidad del cliente",
+    titolEixos: "Ejes de personalidad",
+    phEmpresa: "Por ejemplo: Hospital Comarcal de l'Alt Vallès",
+    phOberta: "Qué sabe el alumno del proyecto antes de empezar la entrevista.",
+    phOculta: "Un requisito por línea, empezando con un guion (-). El cliente solo los revela si el alumno pregunta bien.",
+    anterior: "Pestaña anterior", seguent: "Pestaña siguiente",
+    codiActivaAvancat: "Activa el modo avanzado para cambiarlo",
+    fEmpresa: "la empresa", fOberta: "la información abierta", fOculta: "la información oculta", i: "y",
+    falta: l => `Para descargar el cliente, falta ${l}.`, anarProjecte: "Ir a Proyecto",
+    infoClient: "Con «Cliente dinámico» activado, el nombre y el cargo cambian en cada conversación. Sin él, el cliente es siempre la misma persona.",
+    infoComportament: "Con «Personalidad dinámica» activada, los ejes que dejes en «Aleatorio» se sortean en cada conversación.",
     codiTitol: "Código para activar la evaluación",
     codiNota: c => `Los alumnos deben escribir «${c}» para ver la evaluación. Recuerda decírselo.`,
     codiSenseNumero: "Recomendación: añade algún número para que nadie lo escriba por casualidad.",
@@ -3290,6 +3325,17 @@ const TEXTOS_V06 = {
     torns: (a, t) => `Warns at turn ${a}, closes at ${t}`, sensetorns: "No limit",
     nomFitxer: "File and LAMB assistant name", visorPrompt: "System prompt", visorJson: "JSON structure",
     notaIdioma: "If none is ticked, the client speaks Catalan.",
+    titolIdentitat: "Client identity",
+    titolEixos: "Personality axes",
+    phEmpresa: "For example: Hospital Comarcal de l'Alt Vallès",
+    phOberta: "What the student knows about the project before the interview starts.",
+    phOculta: "One requirement per line, starting with a dash (-). The client only reveals them if the student asks the right questions.",
+    anterior: "Previous tab", seguent: "Next tab",
+    codiActivaAvancat: "Turn on advanced mode to change it",
+    fEmpresa: "the company", fOberta: "the open information", fOculta: "the hidden information", i: "and",
+    falta: l => `To download the client, add ${l}.`, anarProjecte: "Go to Project",
+    infoClient: "With «Dynamic client» on, the name and job title change in every conversation. Without it, the client is always the same person.",
+    infoComportament: "With «Dynamic personality» on, axes left on «Random» are drawn in every conversation.",
     codiTitol: "Code to start the assessment",
     codiNota: c => `Students must type «${c}» to see the assessment. Remember to tell them.`,
     codiSenseNumero: "Tip: add a number so nobody types it by accident.",
@@ -3306,8 +3352,20 @@ const TEXTOS_V06 = {
 const v06 = () => TEXTOS_V06[currentLang] || TEXTOS_V06.cat;
 let pestanyaActiva = "projecte";
 
+const ORDRE_PESTANYES = ["projecte", "client", "comportament", "reunio"];
+
+function pestanyaVeina(pas) {
+  const k = ORDRE_PESTANYES.indexOf(pestanyaActiva) + pas;
+  if (k >= 0 && k < ORDRE_PESTANYES.length) activarPestanya(ORDRE_PESTANYES[k]);
+}
+
 function activarPestanya(id) {
   pestanyaActiva = id;
+  const k = ORDRE_PESTANYES.indexOf(id);
+  if ($("tabPrev")) {
+    $("tabPrev").disabled = k <= 0;
+    $("tabNext").disabled = k >= ORDRE_PESTANYES.length - 1;
+  }
   document.querySelectorAll(".tab").forEach(b => {
     const on = b.dataset.tab === id;
     b.classList.toggle("active", on);
@@ -3320,13 +3378,19 @@ function aplicarTextosV06() {
   const x = v06();
   for (const id in x.tabs) {
     $(`tabbtn-${id}`).textContent = x.tabs[id];
-    $(`ui_tab_${id}_title`).textContent = x.titols[id];
-    $(`ui_tab_${id}_intro`).textContent = x.intros[id];
   }
   $("ui_fitxa_title").textContent = x.fitxa;
   $("ui_lbl_assistant").textContent = x.nomFitxer;
   $("ui_lbl_lang_hint").textContent = x.notaIdioma;
   $("ui_lbl_eval_code").textContent = x.codiTitol;
+  $("ui_titol_identitat").textContent = x.titolIdentitat;
+  $("ui_titol_eixos").textContent = x.titolEixos;
+  $("companyName").placeholder = x.phEmpresa;
+  $("infoOberta").placeholder = x.phOberta;
+  $("infoOculta").placeholder = x.phOculta;
+  $("assistantName").placeholder = "client";
+  $("tabPrev").setAttribute("aria-label", x.anterior); $("tabPrev").title = x.anterior;
+  $("tabNext").setAttribute("aria-label", x.seguent); $("tabNext").title = x.seguent;
 }
 
 /* Fitxa del client: resum en viu de tota la configuració; cada fila porta a la pestanya on es canvia */
@@ -3344,9 +3408,10 @@ function filaFitxa(k, v, opts = {}) {
   b.className = "fitxa-fila";
   b.innerHTML = `<span class="k"></span><span class="v"></span>`;
   b.querySelector(".k").textContent = k;
+  if (opts.title) b.title = opts.title;
   const vEl = b.querySelector(".v");
   vEl.textContent = v || v06().sense;
-  if (!v) vEl.classList.add("buit");
+  if (!v) vEl.classList.add(opts.falta ? "falta" : "buit");
   if (opts.random) vEl.classList.add("random");
   if (opts.editat) vEl.classList.add("editat");
   b.addEventListener("click", () => {
@@ -3364,6 +3429,16 @@ function filaFitxa(k, v, opts = {}) {
   return b;
 }
 
+/* «Ei, activa'm!»: el mode avançat es sacseja suaument quan cal per fer servir una opció */
+function sacsejarModeAvancat() {
+  const fila = $("advancedMode").closest(".switch-row");
+  fila.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  fila.classList.remove("sacseig");
+  void fila.offsetWidth;
+  fila.classList.add("sacseig");
+  fila.addEventListener("animationend", () => fila.classList.remove("sacseig"), { once: true });
+}
+
 function grupFitxa(titol, files) {
   const g = document.createElement("div");
   g.className = "fitxa-grup";
@@ -3374,15 +3449,40 @@ function grupFitxa(titol, files) {
   return g;
 }
 
+/* Camps de Projecte que falten per poder exportar */
+function campsQueFalten() {
+  const x = v06(), f = [];
+  if (!textNet($("companyName").value)) f.push(x.fEmpresa);
+  if (!$("infoOberta").value.trim()) f.push(x.fOberta);
+  if (!$("infoOculta").value.trim()) f.push(x.fOculta);
+  return f;
+}
+
+function renderExportacio() {
+  const falten = campsQueFalten(), avis = $("fitxaAvis");
+  $("ui_btn_download").disabled = $("ui_btn_copy").disabled = falten.length > 0;
+  avis.hidden = !falten.length;
+  if (falten.length) {
+    avis.innerHTML = "";
+    avis.append(v06().falta(llista(falten, v06().i)) + " ");
+    const anar = document.createElement("button");
+    anar.type = "button";
+    anar.textContent = v06().anarProjecte;
+    anar.onclick = () => activarPestanya("projecte");
+    avis.append(anar);
+  }
+}
+
 function renderFitxa() {
   const cont = $("fitxaResum");
   if (!cont) return;
+  renderExportacio();
   const x = v06(), din = esDinamic();
   const nReq = comptarRequisits();
 
   const projecte = [
-    filaFitxa(x.empresa, textNet($("companyName").value), { tab: "projecte", focus: "companyName" }),
-    filaFitxa(x.requisits, nReq ? String(nReq) : "", { tab: "projecte", focus: "infoOculta" })
+    filaFitxa(x.empresa, textNet($("companyName").value), { tab: "projecte", focus: "companyName", falta: true }),
+    filaFitxa(x.requisits, nReq ? String(nReq) : "", { tab: "projecte", focus: "infoOculta", falta: true })
   ];
 
   const identitat = identitatAleatoria()
@@ -3407,7 +3507,8 @@ function renderFitxa() {
   const reunio = [
     filaFitxa(x.idioma, textIdioma, { tab: "reunio", focus: "lang_cat" }),
     filaFitxa(x.durada, tc.actiu ? x.torns(tc.avis, tc.avis + tc.extra) : x.sensetorns, { tab: "reunio", focus: "meetingClose" }),
-    filaFitxa(x.gCodi, codiAvaluacio(), { tab: "reunio", focus: esAvancat() ? "evalCode" : null })
+    filaFitxa(x.gCodi, codiAvaluacio(), { tab: "reunio", focus: () => esAvancat() ? $("evalCode") : (sacsejarModeAvancat(), null),
+      title: esAvancat() ? "" : x.codiActivaAvancat })
   ];
 
   cont.replaceChildren(
@@ -3555,6 +3656,7 @@ function generarEstructuraJSON() {
       advancedMode: esAvancat(),
       dynamicProfile: din,
       randomIdentity: $("randomIdentity").checked,
+      clientDinamic: $("randomIdentity").checked,
       arees: [...estat.arees],
       trets: { ...estat.sel },
       dinTrets: { ...estat.dinSel },
@@ -3569,6 +3671,7 @@ function generarEstructuraJSON() {
 }
 
 function descarregarJson() {
+  if (campsQueFalten().length) return;
   const dades = generarEstructuraJSON();
   const blob = new Blob([JSON.stringify(dades, null, 2)], { type: "application/json" });
   const link = document.createElement("a");
@@ -3592,6 +3695,7 @@ function feedbackBoto(btn, text, ok, original) {
 }
 
 function copiarPrompt() {
+  if (campsQueFalten().length) return;
   const text = compilarSystemPrompt();
   const btn = $("ui_btn_copy");
   const exit = () => feedbackBoto(btn, t().copied, true, () => t().btnCopy);
@@ -3665,7 +3769,9 @@ function importarDesDeConfig(c) {
   if (c.dinTrets) {
     // v0.5.3 o posterior
     estat.dinSel = normalitzarDin(c.dinTrets);
-    $("randomIdentity").checked = c.randomIdentity !== false;
+    $("randomIdentity").checked = typeof c.clientDinamic === "boolean"
+      ? c.clientDinamic
+      : !!c.dynamicProfile && c.randomIdentity !== false;
     if (Array.isArray(c.arees)) estat.arees = AREES.filter(a => c.arees.includes(a.id)).map(a => a.id);
     estat.perso = normalitzarPerso(c.personalitzacio);
     $("advancedMode").checked = !!c.advancedMode;
@@ -3853,8 +3959,9 @@ function inicialitzarUI() {
   estat.dinSel = dinPerDefecte();
   estat.arees = totesLesArees();
   carregarTemaPreferit();
-  $("infoOberta").value = CAS_PER_DEFECTE.infoOberta;
-  $("infoOculta").value = CAS_PER_DEFECTE.infoOculta;
+  // v0.6.1: el cas comença en blanc; «Cas aleatori» n'omple un d'exemple
+  $("infoOberta").value = "";
+  $("infoOculta").value = "";
   $("freeTrait").maxLength = TRET_LLIURE.maxCaracters;
 
   ["assistantName", "companyName", "charName", "charRole", "infoOberta", "infoOculta"].forEach(id => $(id).addEventListener("input", refrescarVistes));
